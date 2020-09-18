@@ -10,10 +10,16 @@ def _parse_config(conf_file=CONF_FILE):
     parser = SafeConfigParser({'home': os.environ['HOME']})
     parser.read(conf_file)
 
-    print(parser.options('datasets'))
-    print(parser.get('datasets', 'datasets_file'))
+    conf = {}
 
-    return None
+    for section in parser.sections():
+        conf.setdefault(section, {})
+
+        for key in parser.options(section):
+
+            conf[section][key] = parser.get(section, key)
+
+    return conf
 
 
 def get_config():
@@ -21,8 +27,6 @@ def get_config():
 
     if not CONFIG:
         CONFIG = _parse_config()
-
-    return CONFIG
 
 
 get_config()

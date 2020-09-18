@@ -9,5 +9,7 @@ __license__ = "BSD - see LICENSE file in top-level package directory"
 __version__ = "0.1.0"
 
 
-from clisops import logging
+import logging
+logging.basicConfig()
+
 

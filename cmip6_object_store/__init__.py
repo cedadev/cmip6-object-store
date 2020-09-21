@@ -8,8 +8,13 @@ __copyright__ = "Copyright 2020 United Kingdom Research and Innovation"
 __license__ = "BSD - see LICENSE file in top-level package directory"
 __version__ = "0.1.0"
 
-
+import os
 import logging
-logging.basicConfig(level=logging.DEBUG)
+LOG_LEVEL = 'INFO'
+logging.basicConfig(level=LOG_LEVEL)
 
+from config import CONFIG
+
+for env_var, value in CONFIG['env_vars'].items():
+    os.environ[env_var.upper()] = value
 

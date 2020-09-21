@@ -59,10 +59,10 @@ def parse_args_run(args):
     if batches == 'all':
         batches = None
     else:
-        parts = batches.split(',')
+        items = batches.split(',')
         batches = []
 
-        for item in batches:
+        for item in items:
             if ':' in item:
                 batches.extend(_range_to_list(item))
             else:

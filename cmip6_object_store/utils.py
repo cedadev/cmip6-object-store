@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 
 from .config import CONFIG
 
@@ -14,3 +15,7 @@ def get_credentials(creds_file=None):
 
     return creds
 
+
+def get_uuid():
+    _uuid = uuid.uuid4()
+    return _uuid

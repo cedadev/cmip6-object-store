@@ -8,7 +8,7 @@ class Lotus(object):
 
     def run(self, cmd, stdout='', stderr='', partition='short-serial',
             duration='00:05'):
-        
+
         if stdout: stdout = f'-o {stdout}'
         if stderr: stderr = f'-e {stderr}'
 

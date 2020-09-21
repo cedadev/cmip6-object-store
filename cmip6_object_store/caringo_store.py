@@ -10,7 +10,8 @@ class CaringoStore(object):
         self._creds = creds
         self._fs = s3fs.S3FileSystem(anon=False, secret=self._creds['secret'], 
                                 key=self._creds['token'],
-                                client_kwargs={'endpoint_url': creds['endpoint_url']})
+                                client_kwargs={'endpoint_url': creds['endpoint_url']},
+                                config_kwargs={'max_pool_connections': 5})
 
     def create_bucket(self, bucket_id):
         if not self._fs.exists(bucket_id):

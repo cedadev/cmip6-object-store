@@ -1,3 +1,5 @@
+import os
+
 from cmip6_object_store.lotus import Lotus
 
 

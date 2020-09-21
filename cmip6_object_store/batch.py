@@ -23,6 +23,7 @@ class BatchManager(object):
         batch_files = []
 
         for batch_file in sorted(os.listdir(self._version_dir)):
+
             batch_file_path = os.path.join(self._version_dir, batch_file)
             batch_files.append(batch_file_path)
 
@@ -32,6 +33,9 @@ class BatchManager(object):
         for batch_file_path in self.get_batch_files():
             yield open(batch_file_path).read().strip().split()
     
+    def get_batch(self, batch_number):
+        batch_file_path = self.get_batch_files()[batch_number - 1]
+        return open(batch_file_path).read().strip().split()
 
     def _write_batch(self, batch_number, batch):
         batch_file = os.path.join(self._version_dir, f'batch_{batch_number:04d}.txt')

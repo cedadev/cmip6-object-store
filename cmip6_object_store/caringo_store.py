@@ -3,8 +3,6 @@ import json
 
 import s3fs
 
-from utils import get_credentials
-
 
 class CaringoStore(object):
     
@@ -39,25 +37,4 @@ class CaringoStore(object):
                     self._fs.chmod(_path, permission)
 
 
-def test_CaringoBucket():
-
-    store = CaringoStore(get_credentials())
-    bucket = 'a-bucket-test'
-
-    store.create_bucket(bucket)
-
-    zpath = f'{bucket}/test.zarr'
-    store_map = store.get_store_map(zpath)
-
-    import xarray as xr
-    dr = "/home/users/astephen/cmip6-xarray-zarr/tests/mini-esgf-data/test_data/badc/cmip6/data/CMIP6/CMIP/IPSL/IPSL-CM6A-LR/historical/r1i1p1f1/SImon/siconc/gn/latest/"
-    ds = xr.open_mfdataset(f'{dr}/*.nc', engine='netcdf4', combine='by_coords')
-
-    ds.to_zarr(store=store_map, mode='w', consolidated=True)
-    ds.close()
-
-    store.set_permissions(zpath)
-
-
-test_CaringoBucket()
 

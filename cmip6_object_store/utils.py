@@ -1,7 +1,7 @@
 import os
 import json
 
-from config import CONFIG
+from .config import CONFIG
 
 
 def get_credentials(creds_file=None):

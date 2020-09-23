@@ -102,8 +102,6 @@ class ConversionTask(object):
         LOGGER.info(f'Submitting conversion to Lotus: { self._batch_number}')
 
 
-
-
 class TaskManager(object):
 
     def __init__(self, project, batches=None, run_mode='lotus', ignore_complete=True):

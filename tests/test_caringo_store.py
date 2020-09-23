@@ -1,7 +1,8 @@
 import xarray as xr
 
-from cmip6_object_store.caringo_store import CaringoStore
-from cmip6_object_store.utils import get_credentials
+from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
+from cmip6_object_store.cmip6_zarr.utils import get_credentials
+
 
 def test_CaringoStore():
 

@@ -13,7 +13,7 @@ import logging
 LOG_LEVEL = 'INFO'
 logging.basicConfig(level=LOG_LEVEL)
 
-from config import CONFIG
+from .config import CONFIG
 
 for env_var, value in CONFIG['env_vars'].items():
     os.environ[env_var.upper()] = value

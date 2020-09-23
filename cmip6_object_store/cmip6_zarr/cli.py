@@ -9,8 +9,8 @@ __license__ = "BSD - see LICENSE file in top-level package directory"
 import argparse
 import sys
 
-from cmip6_object_store.batch import BatchManager
-from cmip6_object_store.task import TaskManager
+from cmip6_object_store.cmip6_zarr.batch import BatchManager
+from cmip6_object_store.cmip6_zarr.task import TaskManager
 
 
 def _get_arg_parser_run(parser):

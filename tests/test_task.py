@@ -1,4 +1,4 @@
-from cmip6_object_store.task import *
+from cmip6_object_store.cmip6_zarr.task import *
 
 
 def test_TaskManager():

@@ -1,6 +1,6 @@
 import os
 
-from cmip6_object_store.lotus import Lotus
+from cmip6_object_store.cmip6_zarr.lotus import Lotus
 
 
 def test_Lotus():

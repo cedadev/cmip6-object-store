@@ -4,9 +4,10 @@ import subprocess
 import pandas as pd
 
 from cmip6_object_store import logging
-from .config import CONFIG
+from ..config import CONFIG
 
 LOGGER = logging.getLogger(__file__)
+
 
 class BatchManager(object):
 

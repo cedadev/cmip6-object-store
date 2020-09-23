@@ -1,5 +1,4 @@
-from .config import CONFIG
-from buckets import CaringoBucket
+from ..config import CONFIG
 
 
 class ZarrWriter(object):

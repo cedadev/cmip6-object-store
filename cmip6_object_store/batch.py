@@ -3,12 +3,10 @@ import subprocess
 
 import pandas as pd
 
-from .. import logging
+from cmip6_object_store import logging
 from ..config import CONFIG
-from .utils import create_dir
 
 LOGGER = logging.getLogger(__file__)
-
 
 class BatchManager(object):
 
@@ -18,7 +16,8 @@ class BatchManager(object):
         run_version = CONFIG['workflow']['run_version']
 
         self._version_dir = os.path.join(data_dir, run_version)
-        create_dir(self._version_dir)
+        if not os.path.isdir(self._version_dir):
+            os.makedirs(self._version_dir)
 
     def get_batch_files(self):
         batch_files = []

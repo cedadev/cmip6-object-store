@@ -1,0 +1,3 @@
+cpu-bind=MASK - host419, task  0  0 [27814]: mask 0x800 set
+Write me to standard output
+/apps/slurm/spool/slurmd/job15874298/slurm_script: line 15: sdweiousdfjk: command not found

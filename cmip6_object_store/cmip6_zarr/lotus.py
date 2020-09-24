@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 
 class Lotus(object):
@@ -14,7 +15,7 @@ class Lotus(object):
 
         batch_cmd = f'sbatch -p {partition} -t {duration} {stdout} {stderr} {cmd}'
 
-        subprocess.check_call(batch_cmd, shell=True)
+        subprocess.check_call(batch_cmd, shell=True, env=os.environ)
 
         print(f"Submitted: {batch_cmd}")
 

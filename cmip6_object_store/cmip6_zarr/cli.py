@@ -1,16 +1,17 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Console script for cmip6_object_store."""
 
-__author__ = """Ag Stephens"""
-__contact__ = "ag.stephens@stfc.ac.uk"
-__copyright__ = "Copyright 2020 United Kingdom Research and Innovation"
-__license__ = "BSD - see LICENSE file in top-level package directory"
 import argparse
 import sys
+import os
+import shutil
 
+from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.batch import BatchManager
 from cmip6_object_store.cmip6_zarr.task import TaskManager
+
+LOGGER = logging.getLogger(__file__)
 
 
 def _get_arg_parser_run(parser):
@@ -103,6 +104,36 @@ def create_main(args):
     bm.create_batches()
 
 
+def _get_arg_parser_clean(parser):
+
+    parser.add_argument(
+        "-p",
+        "--project",
+        type=str,
+        default='cmip6',
+        required=False,
+        help="Project to clean out directories for.",
+    )
+
+    return parser
+
+
+def parse_args_clean(args):
+    return args.project
+
+
+def clean_main(args):
+    project = parse_args_create(args)
+    
+    batch_dir = BatchManager(project)._version_dir
+    log_dir = os.path.join(CONFIG['log']['log_base_dir'], project)
+    to_delete = [log_dir, batch_dir]
+
+    for dr in to_delete:
+        if os.path.isdir(dr):
+            LOGGER.warning(f'Deleting: {dr}')
+            shutil.rmtree(dr)
+
 def main():
     """Console script for cmip6_object_store."""
     main_parser = argparse.ArgumentParser()
@@ -115,6 +146,10 @@ def main():
     create_parser = subparsers.add_parser("create-batches")
     _get_arg_parser_create_batches(create_parser)
     create_parser.set_defaults(func=create_main)
+
+    clean_parser = subparsers.add_parser("clean")
+    _get_arg_parser_clean(clean_parser)
+    clean_parser.set_defaults(func=clean_main)
 
     args = main_parser.parse_args()
     args.func(args)

@@ -1,17 +1,19 @@
 import os
 import math
-import pandas as pd
 
+import pandas as pd
+import dask
 from memory_profiler import profile
 import xarray as xr
 
 from ..config import CONFIG
 from .batch import BatchManager
 from .lotus import Lotus
+from .catalogue import MappingCatalogue
 from .caringo_store import CaringoStore
-from .utils import get_credentials, get_uuid
+from .utils import get_credentials, get_uuid, create_dir
 
-from cmip6_object_store import logging
+from .. import logging
 LOGGER = logging.getLogger(__file__)
 
 
@@ -20,6 +22,7 @@ class ConversionTask(object):
     def __init__(self, batch_number, project, run_mode='lotus'):
         self._batch_number = batch_number
         self._project = project
+        self._map_cat = MappingCatalogue(CONFIG[f'project:{project}']['mapping_catalogue'])
 
         if run_mode == 'local':
             self.run = self._run_local
@@ -33,7 +36,7 @@ class ConversionTask(object):
         archive_dir = CONFIG[f'project:{self._project}']['archive_dir']
         return os.path.join(archive_dir, dataset_id.replace('.', '/'))
 
-    @profile(precision=1)
+#    @profile(precision=1)
     def _run_local(self):
         LOGGER.info(f'Running conversion locally: {self._batch_number}')
 
@@ -44,7 +47,7 @@ class ConversionTask(object):
         chunk_size_bytes = CONFIG['workflow']['chunk_size'] * (2**20)
         bucket = self._get_bucket_name()
 
-        dataset_ids = ['CMIP6.HighResMIP.CMCC.CMCC-CM2-VHR4.control-1950.r1i1p1f1.Amon.va.gn.v20200917']
+#        dataset_ids = ['CMIP6.HighResMIP.CMCC.CMCC-CM2-VHR4.control-1950.r1i1p1f1.Amon.va.gn.v20200917'] 81 GB
 
         for dataset_id in dataset_ids:
 
@@ -55,8 +58,10 @@ class ConversionTask(object):
             store = CaringoStore(get_credentials())
             store.create_bucket(bucket)
 
-            zpath = f'{bucket}/{dataset_id}.zarr'
-            zpath = f'{bucket}/{get_uuid()}.zarr'
+            uid = get_uuid()
+
+#            zpath = f'{bucket}/{dataset_id}.zarr'
+            zpath = f'{bucket}/{uid}.zarr'
             store_map = store.get_store_map(zpath)
 
             dr = self._id_to_directory(dataset_id)
@@ -64,7 +69,12 @@ class ConversionTask(object):
             LOGGER.info(f'Reading data from: {dr}')
 
             DO_WE_NEED_engine='netcdf4'
-            ds = xr.open_mfdataset(f'{dr}/*.nc', use_cftime=True, combine='by_coords')
+
+            file_pattern = f'{dr}/*.nc'
+            import glob
+            file_pattern = glob.glob(file_pattern)[0]
+
+            ds = xr.open_mfdataset(file_pattern, use_cftime=True, combine='by_coords')
 
             LOGGER.info(f'Writing to: {zpath}')
 
@@ -87,9 +97,18 @@ class ConversionTask(object):
                 chunked_ds[var_id].unify_chunks()
 
                 LOGGER.info(f'Chunks: {chunked_ds.chunks}')
-                chunked_ds.to_zarr(store=store_map, mode='w', consolidated=True)
+
+                with dask.config.set(scheduler="synchronous"):
+                    delayed_obj = chunked_ds.to_zarr(store=store_map, mode='w', consolidated=True, compute=False)
+                    delayed_obj.compute()
+
+                #chunked_ds.to_zarr(store=store_map, mode='w', consolidated=True)
             else:
-                ds.to_zarr(store=store_map, mode='w', consolidated=True)
+                with dask.config.set(scheduler="synchronous"):
+                    delayed_obj = ds.to_zarr(store=store_map, mode='w', consolidated=True, compute=False)
+                    delayed_obj.compute()
+                    
+                #ds.to_zarr(store=store_map, mode='w', consolidated=True)
 
             ds.close()
 
@@ -98,8 +117,22 @@ class ConversionTask(object):
 
             LOGGER.info(f'Completed write for: {zpath}')
 
+            self._map_cat.add(uid, dataset_id)
+
     def _run_lotus(self):
-        LOGGER.info(f'Submitting conversion to Lotus: { self._batch_number}')
+        LOGGER.info(f'Submitting conversion to Lotus: {self._batch_number}')
+        cmd = f'./cmip6_object_store/cmip6_zarr/cli.py run -b {self._batch_number} -r local'
+
+        duration = CONFIG['workflow']['max_duration']
+        lotus_log_dir = os.path.join(CONFIG['log']['log_base_dir'], self._project, 'lotus')
+        create_dir(lotus_log_dir)
+        
+        stdout = f'{lotus_log_dir}/{self._batch_number}.out'
+        stderr = f'{lotus_log_dir}/{self._batch_number}.err'
+
+        lotus = Lotus()
+        lotus.run(cmd, stdout=stdout, stderr=stderr, partition='short-serial',
+            duration=duration)
 
 
 class TaskManager(object):
@@ -117,19 +150,6 @@ class TaskManager(object):
     def _setup(self):
         if not self._batches:
             self._batches = range(1, len(self._batch_manager.get_batch_files()) + 1)
-
-    def OLD_load_datasets(self):
-
-        datasets_file = CONFIG['datasets']['datasets_file']
-
-        df = pd.read_csv(datasets_file, skipinitialspace=True)
-
-        self._total_size = df['size_mb'].sum()
-        self._file_count = df['num_files'].sum()
-        self._datasets = list(df['dataset_id'])
-        
-        if not self._ignore_complete:
-            self._filter_datasets()
 
     def _filter_datasets(self):
         log_file = os.path.join(CONFIG['log']['log_base_dir'], f'{self._project}.log')

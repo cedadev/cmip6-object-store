@@ -1,7 +1,10 @@
 import os
 import json
 
+from retry import retry
 import s3fs
+
+from ..config import CONFIG
 
 
 class CaringoStore(object):
@@ -12,14 +15,18 @@ class CaringoStore(object):
                                 key=self._creds['token'],
                                 client_kwargs={'endpoint_url': creds['endpoint_url']},
                                 config_kwargs={'max_pool_connections': 50})
+        self._retries = CONFIG['workflow']['retries']
 
+    @retry(tries=3, delay=3)
     def create_bucket(self, bucket_id):
         if not self._fs.exists(bucket_id):
             self._fs.mkdir(bucket_id)
 
+    @retry(tries=3, delay=3)
     def exists(self, bucket_id):
         return self._fs.exists(bucket_id)
 
+    @retry(tries=3, delay=3)
     def delete(self, bucket_id):
         try:
             self._fs.delete(bucket_id, recursive=True)
@@ -29,6 +36,7 @@ class CaringoStore(object):
     def get_store_map(self, data_path):
         return s3fs.S3Map(root=data_path, s3=self._fs)
 
+    @retry(tries=3, delay=3)
     def set_permissions(self, data_path, permission='public-read'):
         for dr, _, files in self._fs.walk(data_path):
             for item in files:

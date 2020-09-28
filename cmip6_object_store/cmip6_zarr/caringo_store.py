@@ -33,6 +33,10 @@ class CaringoStore(object):
         except Exception as exc:
             raise Exception(f'Cannot delete bucket: {bucket_id}')
 
+    def list(self):
+        return self._fs.ls('.')
+
+    @retry(tries=3, delay=3)
     def get_store_map(self, data_path):
         return s3fs.S3Map(root=data_path, s3=self._fs)
 

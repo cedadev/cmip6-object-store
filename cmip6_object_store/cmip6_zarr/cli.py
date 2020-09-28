@@ -10,6 +10,8 @@ import shutil
 from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.batch import BatchManager
 from cmip6_object_store.cmip6_zarr.task import TaskManager
+from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
+from cmip6_object_store.cmip6_zarr.utils import get_credentials
 
 LOGGER = logging.getLogger(__file__)
 
@@ -115,15 +117,36 @@ def _get_arg_parser_clean(parser):
         help="Project to clean out directories for.",
     )
 
+    parser.add_argument(
+        "-D", 
+        "--delete-objects", 
+        action="store_true",
+        help="Delete all the objects in the Object Store - DANGER!!!"
+    )
+
+    parser.add_argument(
+        "-b",
+        "--buckets",
+        default=[],
+        nargs="*",
+        help="Identifiers of buckets TO DELETE!"
+    )
+
     return parser
 
 
 def parse_args_clean(args):
-    return args.project
+    return args.project, args.delete_objects, args.buckets
 
 
 def clean_main(args):
-    project = parse_args_create(args)
+    project, delete_objects, buckets_to_delete = parse_args_clean(args)
+
+    if delete_objects:
+        resp = input('DO YOU REALLY WANT TO DELETE THE BUCKETS? [Y/N] ')
+        if resp != 'Y':
+            print('Exiting.')
+            sys.exit()
     
     batch_dir = BatchManager(project)._version_dir
     log_dir = os.path.join(CONFIG['log']['log_base_dir'], project)
@@ -133,6 +156,46 @@ def clean_main(args):
         if os.path.isdir(dr):
             LOGGER.warning(f'Deleting: {dr}')
             shutil.rmtree(dr)
+
+    lock_files = [f'{value}.lock' for key, value in CONFIG[f'project:{project}'].items() if key.endswith('_catalogue')]
+
+    for lock_file in lock_files:
+        if os.path.isfile(lock_file):
+            LOGGER.warning(f'Deleting: {lock_file}')
+            os.remove(lock_file)
+
+    if buckets_to_delete:
+        LOGGER.warning('Starting to delete buckets from Object Store!')
+        caringo_store = CaringoStore(creds=get_credentials())
+
+        for bucket in buckets_to_delete:
+            LOGGER.warning(f'DELETING BUCKET: {bucket}')
+            caringo_store.delete(bucket)
+
+
+def _get_arg_parser_list(parser):
+
+    parser.add_argument(
+        "-p",
+        "--project",
+        type=str,
+        default='cmip6',
+        required=False,
+        help="Project to list buckets for.",
+    )
+
+    return parser
+
+
+def parse_args_list(args):
+    return args.project
+
+
+def list_main(args):
+    project = parse_args_list(args)
+    caringo_store = CaringoStore(creds=get_credentials())
+    print(caringo_store.list())
+
 
 def main():
     """Console script for cmip6_object_store."""
@@ -150,6 +213,10 @@ def main():
     clean_parser = subparsers.add_parser("clean")
     _get_arg_parser_clean(clean_parser)
     clean_parser.set_defaults(func=clean_main)
+
+    list_parser = subparsers.add_parser("list")
+    _get_arg_parser_list(list_parser)
+    list_parser.set_defaults(func=list_main)
 
     args = main_parser.parse_args()
     args.func(args)

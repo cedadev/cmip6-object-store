@@ -9,9 +9,11 @@ __license__ = "BSD - see LICENSE file in top-level package directory"
 __version__ = "0.1.0"
 
 import os
+import sys
 import logging
+
 LOG_LEVEL = 'INFO'
-logging.basicConfig(level=LOG_LEVEL)
+logging.basicConfig(level=LOG_LEVEL, stream=sys.stdout)
 
 from .config import CONFIG
 

@@ -59,8 +59,6 @@ class BatchManager(object):
 
 
         self._datasets = list(df['dataset_id'])
-
-        run_version = CONFIG['workflow']['run_version']
         batch_volume_limit = CONFIG['workflow']['batch_volume_limit']
 
         # Loop through grouping them into batches of approx batch_size (in CONFIG)

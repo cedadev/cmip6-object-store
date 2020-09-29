@@ -9,6 +9,7 @@ import shutil
 
 from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.batch import BatchManager
+from cmip6_object_store.cmip6_zarr.catalogue import PickleCatalogue
 from cmip6_object_store.cmip6_zarr.task import TaskManager
 from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
 from cmip6_object_store.cmip6_zarr.utils import get_credentials
@@ -34,8 +35,8 @@ def _get_arg_parser_run(parser):
         default='all',
         required=False,
         help="Batches to run, default is 'all'. Also accepts comma separated " 
-             "list of batch numbers and/or ranges specified with a colon. E.g: "
-             "'1,2,3' or '1:5'.",
+             "list of batch numbers and/or ranges specified with a hyphen. E.g: "
+             "'1,2,3' or '1-5'.",
     )
 
     parser.add_argument(
@@ -50,8 +51,8 @@ def _get_arg_parser_run(parser):
     return parser
 
 
-def _range_to_list(range_string):
-    start, end = [int(_) for _ in range_string.split(':')]
+def _range_to_list(range_string, sep):
+    start, end = [int(_) for _ in range_string.split(sep)]
     return list(range(start, end + 1))
 
 
@@ -66,8 +67,8 @@ def parse_args_run(args):
         batches = []
 
         for item in items:
-            if ':' in item:
-                batches.extend(_range_to_list(item))
+            if '-' in item:
+                batches.extend(_range_to_list(item, '-'))
             else:
                 batches.append(int(item))
 
@@ -82,7 +83,7 @@ def run_main(args):
     tm.run_tasks()
 
 
-def _get_arg_parser_create_batches(parser):
+def _get_arg_parser_project(parser):
 
     parser.add_argument(
         "-p",
@@ -90,18 +91,18 @@ def _get_arg_parser_create_batches(parser):
         type=str,
         default='cmip6',
         required=False,
-        help="Project to generate batches for.",
+        help="Project name",
     )
 
     return parser
 
 
-def parse_args_create(args):
+def parse_args_project(args):
     return args.project
 
 
 def create_main(args):
-    project = parse_args_create(args)
+    project = parse_args_project(args)
     bm = BatchManager(project)
     bm.create_batches()
 
@@ -173,28 +174,23 @@ def clean_main(args):
             caringo_store.delete(bucket)
 
 
-def _get_arg_parser_list(parser):
-
-    parser.add_argument(
-        "-p",
-        "--project",
-        type=str,
-        default='cmip6',
-        required=False,
-        help="Project to list buckets for.",
-    )
-
-    return parser
-
-
-def parse_args_list(args):
-    return args.project
-
-
 def list_main(args):
-    project = parse_args_list(args)
+    project = parse_args_project(args)
     caringo_store = CaringoStore(creds=get_credentials())
     print(caringo_store.list())
+
+
+def show_errors_main(args):
+    project = parse_args_project(args)
+    error_cat = PickleCatalogue(CONFIG[f'project:{project}']['error_catalogue'])
+    
+    for count, (dataset_id, error) in enumerate(error_cat.read().items()):
+        print('\n===================================================')
+        print(f'{dataset_id}:')
+        print('===================================================\n')
+        print('\t' + error)
+
+    print(f'\nFound {count + 1} errors.')
 
 
 def main():
@@ -207,7 +203,7 @@ def main():
     run_parser.set_defaults(func=run_main)
 
     create_parser = subparsers.add_parser("create-batches")
-    _get_arg_parser_create_batches(create_parser)
+    _get_arg_parser_project(create_parser)
     create_parser.set_defaults(func=create_main)
 
     clean_parser = subparsers.add_parser("clean")
@@ -215,8 +211,12 @@ def main():
     clean_parser.set_defaults(func=clean_main)
 
     list_parser = subparsers.add_parser("list")
-    _get_arg_parser_list(list_parser)
+    _get_arg_parser_project(list_parser)
     list_parser.set_defaults(func=list_main)
+
+    show_errors_parser = subparsers.add_parser("show-errors")
+    _get_arg_parser_project(show_errors_parser)
+    show_errors_parser.set_defaults(func=show_errors_main)
 
     args = main_parser.parse_args()
     args.func(args)

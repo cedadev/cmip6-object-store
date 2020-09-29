@@ -54,6 +54,9 @@ class FileLock(object):
 
     def release(self):
         if os.path.isfile(self._fpath):
-            os.remove(self._fpath)
+            try:
+                os.remove(self._fpath)
+            except FileNotFoundError:
+                pass
 
         self.state = 'UNLOCKED'

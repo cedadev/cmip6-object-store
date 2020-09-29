@@ -1,7 +1,11 @@
 import pickle
 import os
+import time
 
 from .utils import FileLock
+
+from .. import logging
+LOGGER = logging.getLogger(__file__)
 
 
 class _CatalogueBase(object):
@@ -23,7 +27,10 @@ class PickleCatalogue(_CatalogueBase):
 
         self._lock.release()
         return content
-        
+
+    def read(self):
+        return self._read()
+
     def _write(self, content):
         self._lock.acquire()
 
@@ -33,11 +40,20 @@ class PickleCatalogue(_CatalogueBase):
         self._lock.release()
 
     def add(self, key, value):
-        self._lock.acquire()
-
         content = self._read()           
         content[key] = value
 
+        time.sleep(2)
+        self._write(content)
+
+    def clear(self, key):
+        content = self._read()
+
+        if key in content:
+            LOGGER.info(f'Clearing from catalogue: {key}')
+            del content[key]
+
+        time.sleep(2)
         self._write(content)
 
     def contains(self, key):

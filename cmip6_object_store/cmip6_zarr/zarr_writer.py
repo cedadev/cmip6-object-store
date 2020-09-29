@@ -36,10 +36,13 @@ class ZarrWriter(object):
         return ('.'.join(parts[:split_at]), '.'.join(parts[split_at:]) + '.zarr')
 
     def convert(self, dataset_id):
+        # Clear out error state if previously recorded
+        self._error_cat.clear(dataset_id)
+
         if self._zarr_cat.contains(dataset_id):
             LOGGER.info(f'Already converted to Zarr: {dataset_id}')
             return
-            
+
         LOGGER.info(f'Converting to Zarr: {dataset_id}')
 
         try:
@@ -49,7 +52,7 @@ class ZarrWriter(object):
 
             store.create_bucket(bucket)
             store_map = store.get_store_map(zpath)
-        except Exception as exc:
+        except Exception:
             msg = f'Failed to create bucket for: {dataset_id}'
             return self._wrap_exception(dataset_id, msg)
 
@@ -58,7 +61,7 @@ class ZarrWriter(object):
         # Load the data and ready it for processing
         try:
             ds = self._get_ds(dataset_id)
-        except Exception as exc:
+        except Exception:
             msg = f'Failed to get Xarray dataset: {dataset_id}'
             return self._wrap_exception(dataset_id, msg)
 
@@ -71,7 +74,7 @@ class ZarrWriter(object):
 
             LOGGER.info(f'Writing to: {zpath}')
             self._write_zarr(ds_to_write, store_map)
-        except Exception as exc:
+        except Exception:
             msg = f'Failed to write to Zarr: {dataset_id}'
             return self._wrap_exception(dataset_id, msg)
 
@@ -82,7 +85,7 @@ class ZarrWriter(object):
 
             LOGGER.info(f'Completed write for: {zpath}')
             self._finalise(dataset_id, zpath)
-        except Exception as exc:
+        except Exception:
             msg = f'Finalisation failed for: {dataset_id}'
             return self._wrap_exception(dataset_id, msg)
 

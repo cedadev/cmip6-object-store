@@ -13,7 +13,7 @@ import sys
 import logging
 
 LOG_LEVEL = 'INFO'
-logging.basicConfig(level=LOG_LEVEL, stream=sys.stdout)
+logging.basicConfig(level=LOG_LEVEL)
 
 from .config import CONFIG
 

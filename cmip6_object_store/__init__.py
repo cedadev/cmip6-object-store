@@ -10,12 +10,12 @@ __version__ = "0.1.0"
 
 import logging
 import os
-import sys
+
+from .config import CONFIG
 
 LOG_LEVEL = "INFO"
 logging.basicConfig(level=LOG_LEVEL)
 
-from .config import CONFIG
 
 for env_var, value in CONFIG["env_vars"].items():
     os.environ[env_var.upper()] = value

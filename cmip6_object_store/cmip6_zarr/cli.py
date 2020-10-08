@@ -3,15 +3,15 @@
 """Console script for cmip6_object_store."""
 
 import argparse
-import sys
 import os
 import shutil
+import sys
 
 from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.batch import BatchManager
+from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
 from cmip6_object_store.cmip6_zarr.catalogue import PickleCatalogue
 from cmip6_object_store.cmip6_zarr.task import TaskManager
-from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
 from cmip6_object_store.cmip6_zarr.utils import get_credentials
 
 LOGGER = logging.getLogger(__file__)
@@ -23,7 +23,7 @@ def _get_arg_parser_run(parser):
         "-p",
         "--project",
         type=str,
-        default='cmip6',
+        default="cmip6",
         required=False,
         help="Project to convert to Zarr in Object Store.",
     )
@@ -32,18 +32,18 @@ def _get_arg_parser_run(parser):
         "-b",
         "--batches",
         type=str,
-        default='all',
+        default="all",
         required=False,
-        help="Batches to run, default is 'all'. Also accepts comma separated " 
-             "list of batch numbers and/or ranges specified with a hyphen. E.g: "
-             "'1,2,3' or '1-5'.",
+        help="Batches to run, default is 'all'. Also accepts comma separated "
+        "list of batch numbers and/or ranges specified with a hyphen. E.g: "
+        "'1,2,3' or '1-5'.",
     )
 
     parser.add_argument(
         "-r",
         "--run-mode",
         type=str,
-        default='lotus',
+        default="lotus",
         required=False,
         help="Mode to run in, either 'lotus' (default) or 'local'.",
     )
@@ -60,15 +60,15 @@ def parse_args_run(args):
     # Parse batches into a single value
     batches = args.batches
 
-    if batches == 'all':
+    if batches == "all":
         batches = None
     else:
-        items = batches.split(',')
+        items = batches.split(",")
         batches = []
 
         for item in items:
-            if '-' in item:
-                batches.extend(_range_to_list(item, '-'))
+            if "-" in item:
+                batches.extend(_range_to_list(item, "-"))
             else:
                 batches.append(int(item))
 
@@ -89,7 +89,7 @@ def _get_arg_parser_project(parser):
         "-p",
         "--project",
         type=str,
-        default='cmip6',
+        default="cmip6",
         required=False,
         help="Project name",
     )
@@ -113,16 +113,16 @@ def _get_arg_parser_clean(parser):
         "-p",
         "--project",
         type=str,
-        default='cmip6',
+        default="cmip6",
         required=False,
         help="Project to clean out directories for.",
     )
 
     parser.add_argument(
-        "-D", 
-        "--delete-objects", 
+        "-D",
+        "--delete-objects",
         action="store_true",
-        help="Delete all the objects in the Object Store - DANGER!!!"
+        help="Delete all the objects in the Object Store - DANGER!!!",
     )
 
     parser.add_argument(
@@ -130,7 +130,7 @@ def _get_arg_parser_clean(parser):
         "--buckets",
         default=[],
         nargs="*",
-        help="Identifiers of buckets TO DELETE!"
+        help="Identifiers of buckets TO DELETE!",
     )
 
     return parser
@@ -144,58 +144,64 @@ def clean_main(args):
     project, delete_objects, buckets_to_delete = parse_args_clean(args)
 
     if delete_objects:
-        resp = input('DO YOU REALLY WANT TO DELETE THE BUCKETS? [Y/N] ')
-        if resp != 'Y':
-            print('Exiting.')
+        resp = input("DO YOU REALLY WANT TO DELETE THE BUCKETS? [Y/N] ")
+        if resp != "Y":
+            print("Exiting.")
             sys.exit()
-    
+
     batch_dir = BatchManager(project)._version_dir
-    log_dir = os.path.join(CONFIG['log']['log_base_dir'], project)
+    log_dir = os.path.join(CONFIG["log"]["log_base_dir"], project)
     to_delete = [log_dir, batch_dir]
 
     for dr in to_delete:
         if os.path.isdir(dr):
-            LOGGER.warning(f'Deleting: {dr}')
+            LOGGER.warning(f"Deleting: {dr}")
             shutil.rmtree(dr)
 
-    lock_files = [f'{value}.lock' for key, value in CONFIG[f'project:{project}'].items() if key.endswith('_catalogue')]
+    lock_files = [
+        f"{value}.lock"
+        for key, value in CONFIG[f"project:{project}"].items()
+        if key.endswith("_catalogue")
+    ]
 
     for lock_file in lock_files:
         if os.path.isfile(lock_file):
-            LOGGER.warning(f'Deleting: {lock_file}')
+            LOGGER.warning(f"Deleting: {lock_file}")
             os.remove(lock_file)
 
     if buckets_to_delete:
-        LOGGER.warning('Starting to delete buckets from Object Store!')
+        LOGGER.warning("Starting to delete buckets from Object Store!")
         caringo_store = CaringoStore(creds=get_credentials())
 
         for bucket in buckets_to_delete:
-            LOGGER.warning(f'DELETING BUCKET: {bucket}')
+            LOGGER.warning(f"DELETING BUCKET: {bucket}")
             caringo_store.delete(bucket)
 
 
 def list_main(args):
-    project = parse_args_project(args)
     caringo_store = CaringoStore(creds=get_credentials())
     print(caringo_store.list())
 
 
 def show_errors_main(args):
     project = parse_args_project(args)
-    error_cat = PickleCatalogue(CONFIG[f'project:{project}']['error_catalogue'])
-    
-    for count, (dataset_id, error) in enumerate(error_cat.read().items()):
-        print('\n===================================================')
-        print(f'{dataset_id}:')
-        print('===================================================\n')
-        print('\t' + error)
+    error_cat = PickleCatalogue(CONFIG[f"project:{project}"]["error_catalogue"])
 
-    print(f'\nFound {count + 1} errors.')
+    errors = error_cat.read().items()
+
+    for dataset_id, error in errors:
+        print("\n===================================================")
+        print(f"{dataset_id}:")
+        print("===================================================\n")
+        print("\t" + error)
+
+    print(f"\nFound {len(errors)} errors.")
 
 
 def main():
     """Console script for cmip6_object_store."""
     main_parser = argparse.ArgumentParser()
+    main_parser.set_defaults(func=lambda args: main_parser.print_help())
     subparsers = main_parser.add_subparsers()
 
     run_parser = subparsers.add_parser("run")
@@ -223,5 +229,5 @@ def main():
 
 
 if __name__ == "__main__":
-    
+
     sys.exit(main())  # pragma: no cover

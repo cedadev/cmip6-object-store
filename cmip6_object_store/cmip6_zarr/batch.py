@@ -1,5 +1,4 @@
-import os, stat
-import subprocess
+import os
 
 import pandas as pd
 
@@ -11,11 +10,10 @@ LOGGER = logging.getLogger(__file__)
 
 
 class BatchManager(object):
-
     def __init__(self, project):
         self._project = project
-        data_dir = CONFIG['workflow']['data_dir']
-        run_version = CONFIG['workflow']['run_version']
+        data_dir = CONFIG["workflow"]["data_dir"]
+        run_version = CONFIG["workflow"]["run_version"]
 
         self._version_dir = os.path.join(data_dir, run_version)
         create_dir(self._version_dir)
@@ -33,35 +31,37 @@ class BatchManager(object):
     def get_batches(self):
         for batch_file_path in self.get_batch_files():
             yield open(batch_file_path).read().strip().split()
-    
+
     def get_batch(self, batch_number):
         batch_file_path = self.get_batch_files()[batch_number - 1]
         return open(batch_file_path).read().strip().split()
 
     def _write_batch(self, batch_number, batch):
-        batch_file = os.path.join(self._version_dir, f'batch_{batch_number:04d}.txt')
+        batch_file = os.path.join(self._version_dir, f"batch_{batch_number:04d}.txt")
 
-        with open(batch_file, 'w') as writer:
-            writer.write('\n'.join(batch))
+        with open(batch_file, "w") as writer:
+            writer.write("\n".join(batch))
 
-        LOGGER.debug(f'Wrote batch file: {batch_file}')
+        LOGGER.debug(f"Wrote batch file: {batch_file}")
 
     def create_batches(self):
         # Read in all datasets
-        datasets_file = CONFIG['datasets']['datasets_file']
+        datasets_file = CONFIG["datasets"]["datasets_file"]
         df = pd.read_csv(datasets_file, skipinitialspace=True)
 
-        total_volume = df['size_mb'].sum()
-        max_volume = CONFIG['workflow']['max_volume']
+        total_volume = df["size_mb"].sum()
+        max_volume = CONFIG["workflow"]["max_volume"]
 
         if total_volume > max_volume:
-            raise Exception(f'Total volume exceeds limit for this project: {total_volume} > {max_volume} !')
+            raise Exception(
+                f"Total volume exceeds limit for this project: "
+                f"{total_volume} > {max_volume} !"
+            )
 
+        self._datasets = list(df["dataset_id"])
+        batch_volume_limit = CONFIG["workflow"]["batch_volume_limit"]
 
-        self._datasets = list(df['dataset_id'])
-        batch_volume_limit = CONFIG['workflow']['batch_volume_limit']
-
-        # Loop through grouping them into batches of approx batch_size (in CONFIG)
+        # Loop through grouping them into batches of approx batch_size
         # - write each batch to text file in versioned data directory
         current_size, current_batch, batch_count = 0, [], 1
 
@@ -78,5 +78,5 @@ class BatchManager(object):
         # Write last one if not written
         if current_batch:
             self._write_batch(batch_count, current_batch)
-            
-        LOGGER.info(f'Wrote {batch_count} batch files.')
+
+        LOGGER.info(f"Wrote {batch_count} batch files.")

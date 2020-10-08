@@ -1,11 +1,14 @@
-from cmip6_object_store.cmip6_zarr.task import *
+from cmip6_object_store.cmip6_zarr.task import TaskManager
 
 
 def test_TaskManager():
     tm = TaskManager("cmip6")
     batch = tm.get_batch()
 
-    dsid = "CMIP6.DCPP.IPSL.IPSL-CM6A-LR.dcppC-ipv-NexTrop-pos.r1i1p1f1.Amon.tauu.gr.v20190110"
+    dsid = (
+        "CMIP6.DCPP.IPSL.IPSL-CM6A-LR.dcppC-ipv-NexTrop-pos."
+        "r1i1p1f1.Amon.tauu.gr.v20190110"
+    )
     assert batch[0] == dsid
 
     assert tm._total_size < 40000000 and tm._total_size > 30000000

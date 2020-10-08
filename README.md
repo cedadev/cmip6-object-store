@@ -10,9 +10,9 @@
 
 The CMIP6 Object Store Library holds a collection of different sub-packages for dealing with CMIP6 data in (the CEDA Caringo) Object Store:
 
- - `cmip6_zarr`: a library for batch-converting archived CMIP6 netCDF files to Zarr in Caringo.
- - `cmip6_ncrg`: a library for experimenting with the use of HTTP Range Gets to netCDF files in Caringo.
- - `cmip6_s3nc`: a library for experimenting with writing S3-netCDF files to Caringo.
+ - `cmip6_object_store.cmip6_zarr`: a library for batch-converting archived CMIP6 netCDF files to Zarr in Caringo.
+ - `cmip6_object_store.cmip6_ncrg`: a library for experimenting with the use of HTTP Range Gets to netCDF files in Caringo.
+ - `cmip6_object_store.cmip6_s3nc`: a library for experimenting with writing S3-netCDF files to Caringo.
 
 * Free software: BSD - see LICENSE file in top-level package directory
 * Documentation: https://cmip6-object-store.readthedocs.io.
@@ -58,10 +58,11 @@ NOTE: It _will not_ re-run batch 1 if you have already run it.
 python cmip6_object_store/cmip6_zarr/cli.py run --project cmip6 --run-mode lotus
 ```
 
-### List all buckeet
+### Show all errors detected when creating Zarr files
 
 ```
-
+python cmip6_object_store/cmip6_zarr/cli.py show-errors -p cmip6
+```
 
 ## Credits
 

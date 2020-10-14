@@ -6,7 +6,7 @@ import s3fs
 import xarray as xr
 
 zarr_url = (
-    "http://cmip6-zarr-o.s3.jc.rl.ac.uk:81/CMIP6.AerChemMIP.NIMS-KMA.UKESM1-0-LL/"
+    "http://cmip6-zarr-o.s3.jc.rl.ac.uk/CMIP6.AerChemMIP.NIMS-KMA.UKESM1-0-LL/"
     "hist-piNTCF.r3i1p1f2.Amon.evspsbl.gn.v20200224.zarr"
 )
 #    "http://cmip6-zarr-o.s3.jc.rl.ac.uk/CMIP6.CMIP.BCC.BCC-CSM2-MR/"

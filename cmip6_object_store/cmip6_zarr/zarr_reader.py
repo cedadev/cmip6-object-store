@@ -6,9 +6,11 @@ import s3fs
 import xarray as xr
 
 zarr_url = (
-    "http://ceda-archive-o.s3.jc.rl.ac.uk/CMIP6.CMIP.BCC.BCC-CSM2-MR/"
-    "1pctCO2.r1i1p1f1.Amon.ps.gn.v20181015.zarr"
+    "http://cmip6-zarr-o.s3.jc.rl.ac.uk:81/CMIP6.AerChemMIP.NIMS-KMA.UKESM1-0-LL/"
+    "hist-piNTCF.r3i1p1f2.Amon.evspsbl.gn.v20200224.zarr"
 )
+#    "http://cmip6-zarr-o.s3.jc.rl.ac.uk/CMIP6.CMIP.BCC.BCC-CSM2-MR/"
+#    "1pctCO2.r1i1p1f1.Amon.ps.gn.v20181015.zarr"
 url_comps = urlparse(zarr_url)
 
 endpoint = f"{url_comps.scheme}://{url_comps.netloc}"

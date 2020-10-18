@@ -1,7 +1,7 @@
 import os
 import time
 
-from cmip6_object_store.cmip6_zarr.utils import FileLock
+from cmip6_object_store.cmip6_zarr.file_lock import FileLock
 
 LOCK_FILE = "./test.lock"
 DATA_FILE = "lock-test.dat"

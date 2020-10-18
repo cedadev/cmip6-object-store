@@ -10,9 +10,12 @@ import sys
 from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.batch import BatchManager
 from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
-from cmip6_object_store.cmip6_zarr.catalogue import PickleCatalogue
 from cmip6_object_store.cmip6_zarr.task import TaskManager
-from cmip6_object_store.cmip6_zarr.utils import get_credentials
+from cmip6_object_store.cmip6_zarr.utils import (
+    get_catalogue,
+    get_credentials,
+    get_zarr_url,
+)
 
 LOGGER = logging.getLogger(__file__)
 
@@ -179,13 +182,20 @@ def clean_main(args):
 
 
 def list_main(args):
-    caringo_store = CaringoStore(creds=get_credentials())
-    print(caringo_store.list())
+    project = parse_args_project(args)
+    cat = get_catalogue("zarr", project)
+    records = cat.read().items()
+
+    for dataaset_id, zarr_path in records:
+        zarr_url = get_zarr_url(zarr_path)
+        print(f"Record: {zarr_url}")
+
+    print(f"\nTotal records: {len(records)}")
 
 
 def show_errors_main(args):
     project = parse_args_project(args)
-    error_cat = PickleCatalogue(CONFIG[f"project:{project}"]["error_catalogue"])
+    error_cat = get_catalogue("error", project)
 
     errors = error_cat.read().items()
 

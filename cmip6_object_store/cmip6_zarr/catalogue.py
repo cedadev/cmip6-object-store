@@ -3,7 +3,7 @@ import pickle
 import time
 
 from .. import logging
-from .utils import FileLock
+from .file_lock import FileLock
 
 LOGGER = logging.getLogger(__file__)
 

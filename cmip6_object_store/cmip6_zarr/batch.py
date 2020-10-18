@@ -59,7 +59,8 @@ class BatchManager(object):
             )
 
         self._datasets = list(df["dataset_id"])
-        batch_volume_limit = CONFIG["workflow"]["batch_volume_limit"]
+        # Convert batch volume limit to MB for unit consistency
+        batch_volume_limit = CONFIG["workflow"]["batch_volume_limit"] * (2 ** 10)
 
         # Loop through grouping them into batches of approx batch_size
         # - write each batch to text file in versioned data directory
@@ -71,6 +72,7 @@ class BatchManager(object):
 
             if current_size >= batch_volume_limit:
                 self._write_batch(batch_count, current_batch)
+
                 # Reset variables
                 current_size, current_batch = 0, []
                 batch_count += 1

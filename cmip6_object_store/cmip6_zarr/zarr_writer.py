@@ -8,8 +8,7 @@ import xarray as xr
 from .. import logging
 from ..config import CONFIG
 from .caringo_store import CaringoStore
-from .catalogue import PickleCatalogue
-from .utils import get_credentials  # , get_uuid
+from .utils import get_catalogue, get_credentials, get_var_id
 
 LOGGER = logging.getLogger(__file__)
 
@@ -20,8 +19,8 @@ class ZarrWriter(object):
         self._project = project
 
         self._config = CONFIG[f"project:{project}"]
-        self._zarr_cat = PickleCatalogue(self._config["zarr_catalogue"])
-        self._error_cat = PickleCatalogue(self._config["error_catalogue"])
+        self._zarr_cat = get_catalogue("zarr", self._project)
+        self._error_cat = get_catalogue("error", self._project)
 
     def _id_to_directory(self, dataset_id):
         archive_dir = self._config["archive_dir"]
@@ -52,8 +51,6 @@ class ZarrWriter(object):
         except Exception:
             msg = f"Failed to create bucket for: {dataset_id}"
             return self._wrap_exception(dataset_id, msg)
-
-        #        uid = get_uuid()
 
         # Load the data and ready it for processing
         try:
@@ -96,12 +93,11 @@ class ZarrWriter(object):
         return ds
 
     def _get_chunked_ds(self, dataset_id, ds, store_map):
-        var_index = self._config["var_index"]
-        chunk_size_bytes = CONFIG["workflow"]["chunk_size"] * (2 ** 20)
-
         LOGGER.info(f"Processing: {dataset_id}")
-        var_id = dataset_id.split(".")[var_index]
+        var_id = get_var_id(dataset_id, project=self._project)
+
         # Chunk by time
+        chunk_size_bytes = CONFIG["workflow"]["chunk_size"] * (2 ** 20)
         LOGGER.info(f'Shape of variable "{var_id}": {ds[var_id].shape}')
         n_bytes = ds[var_id].nbytes
 
@@ -116,18 +112,14 @@ class ZarrWriter(object):
         LOGGER.info(f"Chunks: {chunked_ds.chunks}")
         return chunked_ds
 
-        # chunked_ds.to_zarr(store=store_map, mode='w', consolidated=True)
-
     def _write_zarr(self, ds, store_map):
         with dask.config.set(scheduler="synchronous"):
             delayed_obj = ds.to_zarr(
                 store=store_map, mode="w", consolidated=True, compute=False
             )
             delayed_obj.compute()
-        # ds.to_zarr(store=store_map, mode='w', consolidated=True)
 
     def _finalise(self, dataset_id, zpath):
-        #        self._map_cat.add(uid, dataset_id)
         self._zarr_cat.add(dataset_id, zpath)
         LOGGER.info(f"Wrote catalogue entries for: {dataset_id}")
 

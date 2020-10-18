@@ -49,12 +49,14 @@ class ConversionTask(object):
         stdout = f"{lotus_log_dir}/{self._batch_number}.out"
         stderr = f"{lotus_log_dir}/{self._batch_number}.err"
 
+        partition = CONFIG["workflow"]["job_queue"]
+
         lotus = Lotus()
         lotus.run(
             cmd,
             stdout=stdout,
             stderr=stderr,
-            partition="short-serial",
+            partition=partition,
             duration=duration,
         )
 

@@ -64,6 +64,24 @@ python cmip6_object_store/cmip6_zarr/cli.py run --project cmip6 --run-mode lotus
 python cmip6_object_store/cmip6_zarr/cli.py show-errors -p cmip6
 ```
 
+### Show a count of all the datasets converted so far
+
+```
+python cmip6_object_store/cmip6_zarr/cli.py list -p cmip6 --count-only
+```
+
+### Verify some of the Zarr files already processed
+
+```
+python cmip6_object_store/cmip6_zarr/cli.py verify -p cmip6
+```
+
+This will verify up to 5 datasets by comparing the NetCDF to the Zarr
+versions.
+
+It will keep track of all those verified in the `verify_catalogue` as
+specified in the config file.
+
 ## Credits
 
 This package was created with `Cookiecutter` and the `audreyr/cookiecutter-pypackage` project template.

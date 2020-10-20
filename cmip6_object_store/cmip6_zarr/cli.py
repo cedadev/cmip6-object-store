@@ -10,11 +10,13 @@ import sys
 from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.batch import BatchManager
 from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
+from cmip6_object_store.cmip6_zarr.compare import compare_zarrs_with_ncs
 from cmip6_object_store.cmip6_zarr.task import TaskManager
 from cmip6_object_store.cmip6_zarr.utils import (
     get_catalogue,
     get_credentials,
     get_zarr_url,
+    verification_status,
 )
 
 LOGGER = logging.getLogger(__file__)
@@ -181,16 +183,60 @@ def clean_main(args):
             caringo_store.delete(bucket)
 
 
+def _get_arg_parser_list(parser):
+
+    parser.add_argument(
+        "-p",
+        "--project",
+        type=str,
+        default="cmip6",
+        required=False,
+        help="Project to clean out directories for.",
+    )
+
+    parser.add_argument(
+        "-c",
+        "--count-only",
+        action="store_true",
+        help="Only show the total count of records processed.",
+    )
+
+    return parser
+
+
+def parse_args_list(args):
+    return args.project, args.count_only
+
+
 def list_main(args):
-    project = parse_args_project(args)
+    project, count_only = parse_args_list(args)
     cat = get_catalogue("zarr", project)
     records = cat.read().items()
 
-    for dataaset_id, zarr_path in records:
-        zarr_url = get_zarr_url(zarr_path)
-        print(f"Record: {zarr_url}")
+    if not count_only:
+        for dataset_id, zarr_path in records:
+            zarr_url = get_zarr_url(zarr_path)
+            print(f"Record: {zarr_url}")
 
     print(f"\nTotal records: {len(records)}")
+
+
+def verify_main(args):
+    project = parse_args_project(args)
+    verified_cat = get_catalogue("verify", project)
+
+    successes, out_of = compare_zarrs_with_ncs(project)
+    print(f"\nVerified {successes} out of {out_of} datasets.")
+
+    print("\n\nResults of all verifications so far:")
+
+    results = verified_cat.read().items()
+    n_total = len(results)
+
+    VERIFIED = verification_status[0]
+    n_successes = len([value for _, value in results if value == VERIFIED])
+
+    print(f"\t{n_successes} successfully verified from {n_total} in Zarr.")
 
 
 def show_errors_main(args):
@@ -227,8 +273,12 @@ def main():
     clean_parser.set_defaults(func=clean_main)
 
     list_parser = subparsers.add_parser("list")
-    _get_arg_parser_project(list_parser)
+    _get_arg_parser_list(list_parser)
     list_parser.set_defaults(func=list_main)
+
+    verify_parser = subparsers.add_parser("verify")
+    _get_arg_parser_project(verify_parser)
+    verify_parser.set_defaults(func=verify_main)
 
     show_errors_parser = subparsers.add_parser("show-errors")
     _get_arg_parser_project(show_errors_parser)

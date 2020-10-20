@@ -1,7 +1,5 @@
-import datetime
 import json
 import os
-import time
 import uuid
 
 import s3fs
@@ -9,6 +7,9 @@ import xarray as xr
 
 from ..config import CONFIG
 from .catalogue import PickleCatalogue
+
+known_cats = ["zarr", "error", "verify"]
+verification_status = ["VERIFIED", "FAILED"]
 
 
 def get_credentials(creds_file=None):
@@ -48,9 +49,7 @@ def get_catalogue(cat_type, project):
         cat_type ([string]): catalogue type
         project ([string]): project
     """
-    _known_cats = ["zarr", "error"]
-
-    if cat_type not in _known_cats:
+    if cat_type not in known_cats:
         raise KeyError(f"Catalogue type not known: {cat_type}")
 
     _config = CONFIG[f"project:{project}"]
@@ -76,7 +75,7 @@ def to_dataset_id(path, project="cmip6"):
 
 def get_zarr_url(path):
     dataset_id = to_dataset_id(path)
-    zarr_path = "/".join(split_string_at(dataset_id, ".", 4)) + ".zarr"
+    zarr_path = "/".join(*split_string_at(dataset_id, ".", 4)) + ".zarr"
 
     prefix = CONFIG["store"]["endpoint_url"]
     return f"{prefix}{zarr_path}"

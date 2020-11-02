@@ -45,10 +45,20 @@ def _get_arg_parser_run(parser):
     )
 
     parser.add_argument(
+        "-d",
+        "--datasets",
+        type=str,
+        default=None,
+        required=False,
+        help="Datasets to run. Also accepts comma separated "
+        "list of datasets. E.g.: -d cmip6...gn.v20190910,cmip6...v20200202",
+    )
+
+    parser.add_argument(
         "-r",
         "--run-mode",
         type=str,
-        default="lotus",
+        default="local",
         required=False,
         help="Mode to run in, either 'lotus' (default) or 'local'.",
     )
@@ -64,6 +74,7 @@ def _range_to_list(range_string, sep):
 def parse_args_run(args):
     # Parse batches into a single value
     batches = args.batches
+    datasets = args.datasets
 
     if batches == "all":
         batches = None
@@ -79,12 +90,16 @@ def parse_args_run(args):
 
         batches = sorted(list(set(batches)))
 
-    return args.project, batches, args.run_mode
+    if datasets:
+        datasets = datasets.split(",")
+
+    return args.project, batches, datasets, args.run_mode
 
 
 def run_main(args):
-    project, batches, run_mode = parse_args_run(args)
-    tm = TaskManager(project, batches=batches, run_mode=run_mode)
+    project, batches, datasets, run_mode = parse_args_run(args)
+
+    tm = TaskManager(project, batches=batches, datasets=datasets, run_mode=run_mode)
     tm.run_tasks()
 
 

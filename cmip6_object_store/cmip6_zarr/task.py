@@ -62,19 +62,66 @@ class ConversionTask(object):
 
 
 class TaskManager(object):
-    def __init__(self, project, batches=None, run_mode="lotus", ignore_complete=True):
+    def __init__(
+        self,
+        project,
+        batches=None,
+        datasets=None,
+        run_mode="lotus",
+        ignore_complete=True,
+    ):
+
         self._project = project
         self._batches = batches
+        self._datasets = datasets
         self._run_mode = run_mode
+
         self._ignore_complete = ignore_complete
         self._batch_manager = BatchManager(project)
-        #        self._load_datasets()
-
         self._setup()
 
     def _setup(self):
+        allowed_batch_numbers = [
+            self._batch_manager.batch_file_to_batch_number(_)
+            for _ in self._batch_manager.get_batch_files()
+        ]
+
+        # Overwrite batch
+        if self._datasets:
+            if self._batches:
+                LOGGER.warning("Overwriting batches based on dataset selection!")
+
+            self._filter_batches_by_dataset()
+
         if not self._batches:
-            self._batches = range(1, len(self._batch_manager.get_batch_files()) + 1)
+            self._batches = range(1, len(allowed_batch_numbers) + 1)
+
+        # Now make sure that there are no batches out of the range of
+        # the available batches
+        batches = [_ for _ in self._batches if _ in allowed_batch_numbers]
+
+        # Log issue if some have been removed
+        if batches != self._batches:
+            LOGGER.warn(f"Removed some batches that are not in range.")
+            self._batches = batches
+
+    def _filter_batches_by_dataset(self):
+        """Works out which batches relate to those in self._datasets.
+        Overwrites the value of self._batches accordingly.
+        """
+        batches = []
+        datasets = set(self._datasets)
+
+        for batch_file_path in self._batch_manager.get_batch_files():
+            datasets_in_batch = set(open(batch_file_path).read().strip().split())
+
+            if datasets & datasets_in_batch:
+                batch_number = self._batch_manager.batch_file_to_batch_number(
+                    batch_file_path
+                )
+                batches.append(batch_number)
+
+        self._batches = sorted(batches)
 
     def _filter_datasets(self):
         base_dir = CONFIG["log"]["log_base_dir"]
@@ -97,6 +144,10 @@ class TaskManager(object):
         return batch
 
     def run_tasks(self):
+        if not len(self._batches):
+            LOGGER.warn("Nothing to run!")
+            return
+
         for batch in self._batches:
             task = ConversionTask(batch, project=self._project, run_mode=self._run_mode)
             task.run()

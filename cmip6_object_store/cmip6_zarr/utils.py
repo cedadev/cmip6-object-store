@@ -75,7 +75,7 @@ def to_dataset_id(path, project="cmip6"):
 
 def get_zarr_url(path):
     dataset_id = to_dataset_id(path)
-    zarr_path = "/".join(*split_string_at(dataset_id, ".", 4)) + ".zarr"
+    zarr_path = "/".join(split_string_at(dataset_id, ".", 4)) + ".zarr"
 
     prefix = CONFIG["store"]["endpoint_url"]
     return f"{prefix}{zarr_path}"

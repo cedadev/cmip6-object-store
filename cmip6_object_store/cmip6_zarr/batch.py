@@ -36,6 +36,9 @@ class BatchManager(object):
         batch_file_path = self.get_batch_files()[batch_number - 1]
         return open(batch_file_path).read().strip().split()
 
+    def batch_file_to_batch_number(self, batch_file):
+        return int(os.path.basename(batch_file).split("_")[-1].split(".")[0])
+
     def _write_batch(self, batch_number, batch):
         batch_file = os.path.join(self._version_dir, f"batch_{batch_number:04d}.txt")
 

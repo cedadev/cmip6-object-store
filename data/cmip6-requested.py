@@ -1,0 +1,12 @@
+
+
+req_vars = ["Amon.clt", "Amon.evspsbl", "Amon.hfls", "Amon.hfss", "Amon.hurs", "Amon.huss", "Amon.pr",
+              "Amon.prsn", "Amon.ps", "Amon.psl", "Amon.rlds", "Amon.rlus", "Amon.rlut", "Amon.rsds",
+              "Amon.rsdt", "Amon.rsus", "Amon.rsut", "Amon.sfcWind", "Amon.tas", "Amon.tasmax", "Amon.tasmin",
+              "Amon.tauu", "Amon.tauv", "Amon.ts", "Amon.uas", "Amon.vas", "Amon.zg", "LImon.snw", "Lmon.mrro",
+              "Lmon.mrsos", "OImon.siconc", "OImon.sim", "OImon.sithick", "OImon.snd", "OImon.tsice", "Omon.sos",
+              "Omon.tos", "Omon.zos", "Amon.ta", "Amon.ua", "Amon.va", "Amon.hur", "Amon.hus", "Amon.zg",
+              'Oday.tos', 'day.hurs', 'day.huss', 'day.mrro', 'day.pr', 'day.psl', 'day.sfcWindmax', 'day.snw',
+              'day.tas', 'day.tasmax', 'day.tasmin','day.uas', 'day.vas', 'day.zg', 'CFday.ps', ]
+              #  'day.ua', 'day.va', ]
+              # '3hr.huss', '3hr.pr', '3hr.tas', '3hr.vas', '3hr.uas', '6hrPlev.zg1000']

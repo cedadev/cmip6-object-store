@@ -6,75 +6,89 @@
   "attributes": [
     {
       "column_name": "mip_era",
-      "vocabulary": ""
+      "vocabulary": "https://raw.githubusercontent.com/WCRP-CMIP/CMIP6_CVs/master/mip_era.json"
     },
     {
-      "column_name": "activity",
-      "vocabulary": ""
+      "column_name": "activity_id",
+      "vocabulary": "https://raw.githubusercontent.com/WCRP-CMIP/CMIP6_CVs/master/CMIP6_activity_id.json"
     },
     {
-      "column_name": "institute",
-      "vocabulary": ""
+      "column_name": "institution_id",
+      "vocabulary": "https://raw.githubusercontent.com/WCRP-CMIP/CMIP6_CVs/master/CMIP6_institution_id.json"
     },
     {
-      "column_name": "model",
-      "vocabulary": ""
+      "column_name": "source_id",
+      "vocabulary": "https://raw.githubusercontent.com/WCRP-CMIP/CMIP6_CVs/master/CMIP6_source_id.json"
     },
     {
       "column_name": "experiment_id",
+      "vocabulary": "https://raw.githubusercontent.com/WCRP-CMIP/CMIP6_CVs/master/CMIP6_experiment_id.json"
+    },
+    {
+      "column_name": "member_id",
       "vocabulary": ""
     },
     {
-      "column_name": "ensemble_member",
-      "vocabulary": ""
+      "column_name": "table_id",
+      "vocabulary": "https://raw.githubusercontent.com/WCRP-CMIP/CMIP6_CVs/master/CMIP6_table_id.json"
     },
     {
-      "column_name": "mip_table",
-      "vocabulary": ""
-    },
-    {
-      "column_name": "variable",
+      "column_name": "variable_id",
       "vocabulary": ""
     },
     {
       "column_name": "grid_label",
-      "vocabulary": ""
+      "vocabulary": "https://raw.githubusercontent.com/WCRP-CMIP/CMIP6_CVs/master/CMIP6_grid_label.json"
     },
     {
       "column_name": "version",
       "vocabulary": ""
     },
-      {
-      "column_name": "temporal_range",
+    {
+      "column_name": "dcpp_start_year",
+      "vocabulary": ""
+    },
+    {
+      "column_name": "time_range",
+      "vocabulary": ""
+    },
+    {
+      "column_name": "zarr_path",
       "vocabulary": ""
     }
   ],
   "assets": {
-    "column_name": "zarr_path",
-    "format": "zarr"
+    "column_name": "nc_path",
+    "format": "netcdf"
   },
   "aggregation_control": {
-    "variable_column_name": "variable",
+    "variable_column_name": "variable_id",
     "groupby_attrs": [
-      "activity",
-      "institute",
-      "model",
+      "activity_id",
+      "institution_id",
+      "source_id",
       "experiment_id",
-      "mip_table"
+      "table_id",
+      "grid_label"
     ],
     "aggregations": [
       {
         "type": "union",
-        "attribute_name": "variable"
+        "attribute_name": "variable_id"
       },
       {
         "type": "join_existing",
-        "attribute_name": "temporal_range",
+        "attribute_name": "time_range",
         "options": { "dim": "time", "coords": "minimal", "compat": "override" }
       },
       {
         "type": "join_new",
-        "attribute_name": "ensemble_member",
+        "attribute_name": "member_id",
+        "options": { "coords": "minimal", "compat": "override" }
+      },
+      {
+        "type": "join_new",
+        "attribute_name": "dcpp_start_year",
         "options": { "coords": "minimal", "compat": "override" }
       }
     ]

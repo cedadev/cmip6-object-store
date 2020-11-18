@@ -238,14 +238,14 @@ def list_main(args):
 
 def verify_main(args):
     project = parse_args_project(args)
-    verified_cat = get_catalogue("verify", project)
+    verified_pstore = get_pickle_store("verify", project)
 
     successes, out_of = compare_zarrs_with_ncs(project)
     print(f"\nVerified {successes} out of {out_of} datasets.")
 
     print("\n\nResults of all verifications so far:")
 
-    results = verified_cat.read().items()
+    results = verified_pstore.read().items()
     n_total = len(results)
 
     VERIFIED = verification_status[0]
@@ -256,9 +256,9 @@ def verify_main(args):
 
 def show_errors_main(args):
     project = parse_args_project(args)
-    error_cat = get_catalogue("error", project)
+    error_pstore = get_pickle_store("error", project)
 
-    errors = error_cat.read().items()
+    errors = error_pstore.read().items()
 
     for dataset_id, error in errors:
         print("\n===================================================")

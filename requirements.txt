@@ -5,3 +5,4 @@ xarray
 retry
 s3fs
 pandas
+intake-esm

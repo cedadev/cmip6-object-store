@@ -6,9 +6,9 @@ import s3fs
 import xarray as xr
 
 from ..config import CONFIG
-from .catalogue import PickleCatalogue
+from .pickle_store import PickleStore
 
-known_cats = ["zarr", "error", "verify"]
+known_pickles = ["zarr", "error", "verify"]
 verification_status = ["VERIFIED", "FAILED"]
 
 
@@ -38,24 +38,20 @@ def create_dir(dr):
         os.makedirs(dr)
 
 
-def get_catalogue(cat_type, project):
+def get_pickle_store(store_type, project):
     """
-    Return a catalogue of type: `cat_type`.
-    Catalogue types can be:
-     - "zarr"
-     - "error"
+    Return a pickle store of type: `store_type`.
+    Pickle store types can be any listed in: `known_pickles`
 
     Args:
-        cat_type ([string]): catalogue type
+        store_type ([string]): pickle type
         project ([string]): project
     """
-    if cat_type not in known_cats:
-        raise KeyError(f"Catalogue type not known: {cat_type}")
+    if store_type not in known_pickles:
+        raise KeyError(f"Pickle store type not known: {store_type}")
 
     _config = CONFIG[f"project:{project}"]
-    cat = PickleCatalogue(_config[f"{cat_type}_catalogue"])
-
-    return cat
+    return PickleStore(_config[f"{store_type}_pickle"])
 
 
 def split_string_at(s, sep, indx):
@@ -81,7 +77,7 @@ def get_zarr_url(path):
     return f"{prefix}{zarr_path}"
 
 
-def read_zarr(path):
+def read_zarr(path, **kwargs):
     dataset_id = to_dataset_id(path)
     zarr_path = "/".join(split_string_at(dataset_id, ".", 4)) + ".zarr"
 
@@ -91,7 +87,7 @@ def read_zarr(path):
     )
 
     s3_store = s3fs.S3Map(root=zarr_path, s3=jasmin_s3)
-    ds = xr.open_zarr(store=s3_store, consolidated=True)
+    ds = xr.open_zarr(store=s3_store, consolidated=True, **kwargs)
     return ds
 
 

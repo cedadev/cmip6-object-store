@@ -13,8 +13,8 @@ from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
 from cmip6_object_store.cmip6_zarr.compare import compare_zarrs_with_ncs
 from cmip6_object_store.cmip6_zarr.task import TaskManager
 from cmip6_object_store.cmip6_zarr.utils import (
-    get_catalogue,
     get_credentials,
+    get_pickle_store,
     get_zarr_url,
     verification_status,
 )
@@ -181,7 +181,7 @@ def clean_main(args):
     lock_files = [
         f"{value}.lock"
         for key, value in CONFIG[f"project:{project}"].items()
-        if key.endswith("_catalogue")
+        if key.endswith("_pickle")
     ]
 
     for lock_file in lock_files:
@@ -225,11 +225,11 @@ def parse_args_list(args):
 
 def list_main(args):
     project, count_only = parse_args_list(args)
-    cat = get_catalogue("zarr", project)
-    records = cat.read().items()
+    pstore = get_pickle_store("zarr", project)
+    records = pstore.read().items()
 
     if not count_only:
-        for dataset_id, zarr_path in records:
+        for _, zarr_path in records:
             zarr_url = get_zarr_url(zarr_path)
             print(f"Record: {zarr_url}")
 

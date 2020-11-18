@@ -8,7 +8,7 @@ import xarray as xr
 from .. import logging
 from ..config import CONFIG
 from .caringo_store import CaringoStore
-from .utils import get_catalogue, get_credentials, get_var_id
+from .utils import get_credentials, get_pickle, get_var_id
 
 LOGGER = logging.getLogger(__file__)
 
@@ -19,8 +19,8 @@ class ZarrWriter(object):
         self._project = project
 
         self._config = CONFIG[f"project:{project}"]
-        self._zarr_cat = get_catalogue("zarr", self._project)
-        self._error_cat = get_catalogue("error", self._project)
+        self._zarr_pickle = get_pickle("zarr", self._project)
+        self._error_pickle = get_pickle("error", self._project)
 
     def _id_to_directory(self, dataset_id):
         archive_dir = self._config["archive_dir"]
@@ -33,9 +33,9 @@ class ZarrWriter(object):
 
     def convert(self, dataset_id):
         # Clear out error state if previously recorded
-        self._error_cat.clear(dataset_id)
+        self._error_pickle.clear(dataset_id)
 
-        if self._zarr_cat.contains(dataset_id):
+        if self._zarr_pickle.contains(dataset_id):
             LOGGER.info(f"Already converted to Zarr: {dataset_id}")
             return
 
@@ -120,11 +120,11 @@ class ZarrWriter(object):
             delayed_obj.compute()
 
     def _finalise(self, dataset_id, zpath):
-        self._zarr_cat.add(dataset_id, zpath)
-        LOGGER.info(f"Wrote catalogue entries for: {dataset_id}")
+        self._zarr_pickle.add(dataset_id, zpath)
+        LOGGER.info(f"Wrote pickle entries for: {dataset_id}")
 
     def _wrap_exception(self, dataset_id, msg):
         tb = traceback.format_exc()
         error = f"{msg}:\n{tb}"
-        self._error_cat.add(dataset_id, error)
+        self._error_pickle.add(dataset_id, error)
         LOGGER.error(f"FAILED TO COMPLETE FOR: {dataset_id}\n{error}")

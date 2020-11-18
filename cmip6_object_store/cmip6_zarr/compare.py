@@ -12,7 +12,7 @@ import xarray as xr
 
 from cmip6_object_store.cmip6_zarr.utils import (
     get_archive_path,
-    get_catalogue,
+    get_pickle_store,
     get_var_id,
     read_zarr,
     verification_status,
@@ -29,27 +29,27 @@ def compare_zarrs_with_ncs(project, n_to_test=5):
     """
     print(f"\nVerifying up to {n_to_test} datasets for: {project}...")
     VERIFIED, FAILED = verification_status
-    verified_cat = get_catalogue("verify", project=project)
+    verified_pickle = get_pickle_store("verify", project=project)
     tested = []
 
     successes, failures = 0, 0
 
-    cat = get_catalogue("zarr", project="cmip6").read()
-    dataset_ids = list(cat.keys())
+    zarr_pickle = get_pickle_store("zarr", project="cmip6").read()
+    dataset_ids = list(zarr_pickle.keys())
 
     while len(tested) < n_to_test:
         dataset_id = random.choice(dataset_ids)
-        if dataset_id in tested or verified_cat.read().get(dataset_id) == VERIFIED:
+        if dataset_id in tested or verified_pickle.read().get(dataset_id) == VERIFIED:
             continue
 
         print(f"==========================\nVerifying: {dataset_id}")
         try:
             _compare_dataset(dataset_id)
-            verified_cat.add(dataset_id, VERIFIED)
+            verified_pickle.add(dataset_id, VERIFIED)
             successes += 1
             print(f"Comparison succeeded for: {dataset_id}")
         except Exception:
-            verified_cat.add(dataset_id, FAILED)
+            verified_pickle.add(dataset_id, FAILED)
             failures += 1
             tb = traceback.format_exc()
             print(f"FAILED comparison for {dataset_id}: traceback was\n\n: {tb}")
@@ -90,8 +90,8 @@ def _compare_dataset(dataset_id):
 
     for prop in ("data_vars", "coords"):
         a, b = [
-             sorted(list(_.keys()))
-             for _ in (getattr(nc_subset, prop), getattr(zarr_subset, prop))
+            sorted(list(_.keys()))
+            for _ in (getattr(nc_subset, prop), getattr(zarr_subset, prop))
         ]
         print(f'\nComparing "{prop}": {a} \n------------\n {b}')
         assert a == b

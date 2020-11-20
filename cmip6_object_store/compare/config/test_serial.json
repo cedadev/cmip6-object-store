@@ -1,0 +1,10 @@
+{
+    "config_name":"test",
+    "source": "disk", 
+    "method": "netCDF4-python",
+    "path": "/gws/nopw/j04/perf_testing/cmip6",
+    "file": "smalltest0.nc",
+    "var": "var",
+    "read_pattern": "serial",
+    "repeats": 1
+}

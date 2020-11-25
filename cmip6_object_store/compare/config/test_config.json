@@ -1,0 +1,11 @@
+{
+    "config_name":"test",
+    "source": "disk", 
+    "path": "default",
+    "log_level": "info",
+    "method": "netCDF4-python",
+    "file": "test0-1.nc",
+    "var": "var",
+    "read_pattern": "serial",
+    "repeats": 1
+}

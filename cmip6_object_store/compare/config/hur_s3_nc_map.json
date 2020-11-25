@@ -1,0 +1,10 @@
+{
+    "config_name":"test",
+    "source": "S3", 
+    "method": "netCDF4-python",
+    "path": "http://cedadev-o.s3.jc.rl.ac.uk/mjones07/",
+    "file": "CMIP.BCC.BCC-CSM2-MR.piControl.r1i1p1f1.Amon.hur.gn.v20181016.nc",
+    "var": "hur",
+    "read_pattern": "map",
+    "repeats": 1
+}

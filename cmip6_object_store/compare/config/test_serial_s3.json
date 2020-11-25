@@ -1,0 +1,10 @@
+{
+    "config_name":"test",
+    "source": "S3", 
+    "method": "netCDF4-python",
+    "path": "http://cedadev-o.s3.jc.rl.ac.uk/mjones07/",
+    "file": "smalltest0.nc",
+    "var": "var",
+    "read_pattern": "serial",
+    "repeats": 1
+}

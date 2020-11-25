@@ -1,0 +1,23 @@
+aiobotocore==1.1.2
+aiohttp==3.7.2
+aioitertools==0.7.1
+async-timeout==3.0.1
+attrs==20.3.0
+botocore==1.19.13
+cftime==1.2.1
+chardet==3.0.4
+Cython==0.29.21
+idna==2.10
+jmespath==0.10.0
+mpi4py==3.0.3
+multidict==5.0.0
+netCDF4==1.5.4
+numpy==1.19.4
+psutil==5.7.3
+python-dateutil==2.8.1
+-e git+https://github.com/cedadev/S3-netcdf-python.git@f54a8159b241123885f880a5fc5bdb5891bccc72#egg=S3netCDF4
+six==1.15.0
+typing-extensions==3.7.4.3
+urllib3==1.25.11
+wrapt==1.12.1
+yarl==1.6.2

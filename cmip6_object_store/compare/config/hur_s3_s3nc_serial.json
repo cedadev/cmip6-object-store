@@ -1,0 +1,10 @@
+{
+    "config_name":"test",
+    "source": "S3", 
+    "method": "S3netCDF4-python",
+    "path": "s3://cedadev-o/CMIP6.CMIP.BCC.BCC-CSM2-MR/",
+    "file": "piControl.r1i1p1f1.Amon.hur.gn.d20181016.nc",
+    "var": "hur",
+    "read_pattern": "serial",
+    "repeats": 1
+}

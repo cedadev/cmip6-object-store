@@ -1,0 +1,11 @@
+{
+    "config_name":"test",
+    "source": "S3", 
+    "method": "zarr",
+    "endpoint": "http://cmip6-zarr-o.s3.jc.rl.ac.uk/",
+    "path": "CMIP6.CMIP.BCC.BCC-CSM2-MR",
+    "file": "piControl.r1i1p1f1.Amon.hur.gn.v20181016.zarr",
+    "var": "hur",
+    "read_pattern": "serial",
+    "repeats": 1
+}

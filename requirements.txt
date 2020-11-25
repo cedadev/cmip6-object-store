@@ -5,4 +5,7 @@ xarray
 retry
 s3fs
 pandas
+intake
 intake-esm
+
+esm-collection-spec

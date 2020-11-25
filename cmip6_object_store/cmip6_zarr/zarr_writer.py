@@ -8,7 +8,7 @@ import xarray as xr
 from .. import logging
 from ..config import CONFIG
 from .caringo_store import CaringoStore
-from .utils import get_credentials, get_pickle, get_var_id
+from .utils import get_credentials, get_pickle_store, get_var_id
 
 LOGGER = logging.getLogger(__file__)
 
@@ -19,8 +19,8 @@ class ZarrWriter(object):
         self._project = project
 
         self._config = CONFIG[f"project:{project}"]
-        self._zarr_pickle = get_pickle("zarr", self._project)
-        self._error_pickle = get_pickle("error", self._project)
+        self._zarr_pickle = get_pickle_store("zarr", self._project)
+        self._error_pickle = get_pickle_store("error", self._project)
 
     def _id_to_directory(self, dataset_id):
         archive_dir = self._config["archive_dir"]

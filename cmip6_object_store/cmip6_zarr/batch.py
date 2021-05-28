@@ -44,6 +44,7 @@ class BatchManager(object):
 
         with open(batch_file, "w") as writer:
             writer.write("\n".join(batch))
+            writer.write("\n")
 
         LOGGER.debug(f"Wrote batch file: {batch_file}")
 

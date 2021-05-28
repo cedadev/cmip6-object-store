@@ -81,9 +81,10 @@ class TaskManager(object):
         self._setup()
 
     def _setup(self):
+        
         allowed_batch_numbers = [
-            self._batch_manager.batch_file_to_batch_number(_)
-            for _ in self._batch_manager.get_batch_files()
+            self._batch_manager.batch_file_to_batch_number(batch_file_path)
+            for batch_file_path in self._batch_manager.get_batch_files()
         ]
 
         # Overwrite batch
@@ -98,7 +99,7 @@ class TaskManager(object):
 
         # Now make sure that there are no batches out of the range of
         # the available batches
-        batches = [_ for _ in self._batches if _ in allowed_batch_numbers]
+        batches = [num for num in self._batches if num in allowed_batch_numbers]
 
         # Log issue if some have been removed
         if batches != self._batches:

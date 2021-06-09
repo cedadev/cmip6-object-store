@@ -33,6 +33,8 @@ class ConversionTask(object):
         for dataset_id in dataset_ids:
             zarr_writer.convert(dataset_id)
 
+        LOGGER.info(f"{len(dataset_ids)} datasets processed in batch {batch}")
+
     def _run_lotus(self):
         LOGGER.info(f"Submitting conversion to Lotus: " f"{self._batch_number}")
         cmd = (
@@ -154,3 +156,4 @@ class TaskManager(object):
         for batch in self._batches:
             task = ConversionTask(batch, project=self._project, run_mode=self._run_mode)
             task.run()
+        LOGGER.info(f"{len(self._batches)} batches completed")

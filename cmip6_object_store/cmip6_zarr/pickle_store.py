@@ -9,12 +9,13 @@ LOGGER = logging.getLogger(__file__)
 
 
 class PickleStore:
-    def __init__(self, content_file):
+    def __init__(self, content_file, lock_timeout=20):
         self._content_file = content_file
         self._lock = FileLock(f"{content_file}.lock")
+        self._lock_timeout = lock_timeout
 
     def _read(self):
-        self._lock.acquire()
+        self._lock.acquire(max_time=self._lock_timeout)
 
         if os.path.isfile(self._content_file):
             content = pickle.load(open(self._content_file, "rb")) or {}
@@ -28,7 +29,7 @@ class PickleStore:
         return self._read()
 
     def _write(self, content):
-        self._lock.acquire()
+        self._lock.acquire(max_time=self._lock_timeout)
 
         with open(self._content_file, "wb") as f:
             pickle.dump(content, f)

@@ -22,14 +22,21 @@ class ZarrWriter(object):
         self._zarr_pickle = get_pickle_store("zarr", self._project)
         self._error_pickle = get_pickle_store("error", self._project)
 
+    def _get_from_proj_or_workflow(self, key):
+        if key in self._config:
+            return self._config[key]
+        return CONFIG["workflow"][key]
+
     def _id_to_directory(self, dataset_id):
         archive_dir = self._config["archive_dir"]
         return os.path.join(archive_dir, dataset_id.replace(".", "/"))
 
     def _get_zarr_path(self, dataset_id):
-        split_at = CONFIG["workflow"]["split_level"]
+        split_at = self._get_from_proj_or_workflow("split_level")
+
         parts = dataset_id.split(".")
-        return (".".join(parts[:split_at]), ".".join(parts[split_at:]) + ".zarr")
+        prefix = self._config.get("bucket_prefix", "")
+        return (prefix + ".".join(parts[:split_at]), ".".join(parts[split_at:]) + ".zarr")
 
     def convert(self, dataset_id):
         # Clear out error state if previously recorded
@@ -45,6 +52,7 @@ class ZarrWriter(object):
             store = CaringoStore(get_credentials())
             bucket, zarr_file = self._get_zarr_path(dataset_id)
             zpath = f"{bucket}/{zarr_file}"
+            LOGGER.info(f"Zarr path: {zpath}")
 
             store.create_bucket(bucket)
             store_map = store.get_store_map(zpath)
@@ -97,7 +105,7 @@ class ZarrWriter(object):
         var_id = get_var_id(dataset_id, project=self._project)
 
         # Chunk by time
-        chunk_size_bytes = CONFIG["workflow"]["chunk_size"] * (2 ** 20)
+        chunk_size_bytes = self._get_from_proj_or_workflow("chunk_size") * (2 ** 20)
         LOGGER.info(f'Shape of variable "{var_id}": {ds[var_id].shape}')
         n_bytes = ds[var_id].nbytes
 

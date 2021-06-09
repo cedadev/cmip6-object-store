@@ -41,6 +41,7 @@ class ConversionTask(object):
         )
 
         duration = CONFIG["workflow"]["max_duration"]
+        memory = CONFIG["workflow"]["memory"]
         lotus_log_dir = os.path.join(
             CONFIG["log"]["log_base_dir"], self._project, "lotus"
         )
@@ -58,6 +59,7 @@ class ConversionTask(object):
             stderr=stderr,
             partition=partition,
             duration=duration,
+            memory=memory,
         )
 
 

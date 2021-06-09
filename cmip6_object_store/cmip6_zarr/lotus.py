@@ -7,15 +7,14 @@ class Lotus(object):
         pass
 
     def run(
-        self, cmd, stdout="", stderr="", partition="short-serial", duration="00:05"
+            self, cmd, stdout="", stderr="", partition="short-serial", duration="00:05", memory=None
     ):
 
-        if stdout:
-            stdout = f"-o {stdout}"
-        if stderr:
-            stderr = f"-e {stderr}"
-
-        batch_cmd = f"sbatch -p {partition} -t {duration} " f"{stdout} {stderr} {cmd}"
+        batch_cmd = (f"sbatch -p {partition} -t {duration}"
+                     f"{f' -o {stdout}' if stdout else ''}"
+                     f"{f' -e {stderr}' if stderr else ''}"
+                     f"{f' --mem={memory}' if memory else ''}"
+                     f" {cmd}")
 
         subprocess.check_call(batch_cmd, shell=True, env=os.environ)
 

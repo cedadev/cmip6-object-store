@@ -16,6 +16,16 @@ def _to_dict(i):
     return dict([_.split(":") for _ in i.strip().split("\n")])
 
 
+def _to_bool(i):
+    val = i.strip().lower()
+    if val in ('true', 'yes', '1'):
+        return True
+    elif val in ('false', 'no', '0'):
+        return False
+    else:
+        raise ValueError(f'{i} cannot be converted to boolean')
+
+
 def _to_int(i):
     return int(i)
 
@@ -42,6 +52,9 @@ def _get_mappers(conf):
 
     for key in _chain_config_types(conf, ["floats", "extra_floats"]):
         mappers[key] = _to_float
+
+    for key in _chain_config_types(conf, ["bools", "extra_bools"]):
+        mappers[key] = _to_bool
 
     return mappers
 

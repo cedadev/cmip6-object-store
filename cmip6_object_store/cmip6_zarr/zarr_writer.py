@@ -82,8 +82,12 @@ class ZarrWriter(object):
 
         try:
             ds.close()
-            LOGGER.info("Setting read permissions")
-            store.set_permissions(zpath)
+            do_perms = self._get_from_proj_or_workflow("set_permissions")
+            if do_perms:
+                LOGGER.info("Setting read permissions")
+                store.set_permissions(zpath)
+            else:
+                LOGGER.info("Skipping setting permissions")
 
             LOGGER.info(f"Completed write for: {zpath}")
             self._finalise(dataset_id, zpath)

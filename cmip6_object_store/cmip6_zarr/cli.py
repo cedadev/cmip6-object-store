@@ -33,7 +33,17 @@ def _get_arg_parser_run(parser):
         help="Project to convert to Zarr in Object Store.",
     )
 
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+
+    group.add_argument(
+        "--slurm-array-member",
+        action="store_true",
+        required=False,
+        help=("Not for interactive use. \n"
+              "Batch number will be taken from SLURM_ARRAY_TASK_ID environment variable."),
+    )
+
+    group.add_argument(
         "-b",
         "--batches",
         type=str,
@@ -58,7 +68,7 @@ def _get_arg_parser_run(parser):
         "-r",
         "--run-mode",
         type=str,
-        default="local",
+        default="lotus",
         required=False,
         help="Mode to run in, either 'lotus' (default) or 'local'.",
     )
@@ -67,16 +77,20 @@ def _get_arg_parser_run(parser):
 
 
 def _range_to_list(range_string, sep):
-    start, end = [int(_) for _ in range_string.split(sep)]
+    start, end = [int(val) for val in range_string.split(sep)]
     return list(range(start, end + 1))
 
 
 def parse_args_run(args):
     # Parse batches into a single value
+    slurm_array_member = args.slurm_array_member
     batches = args.batches
     datasets = args.datasets
 
-    if batches == "all":
+    if slurm_array_member:
+        batches = [int(os.environ["SLURM_ARRAY_TASK_ID"])]
+    
+    elif batches == "all":
         batches = None
     else:
         items = batches.split(",")

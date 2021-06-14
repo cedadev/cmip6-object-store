@@ -11,17 +11,12 @@ LOGGER = logging.getLogger(__file__)
 
 
 class ConversionTask(object):
-    def __init__(self, batch_number, project, run_mode="lotus"):
+    def __init__(self, batch_number, project):
         self._batch_number = batch_number
         self._project = project
 
-        if run_mode == "local":
-            self.run = self._run_local
-        else:
-            self.run = self._run_lotus
-
     #    @profile(precision=1)
-    def _run_local(self):
+    def run(self):
         batch = self._batch_number
         LOGGER.info(f"Running conversion locally: {batch}")
 
@@ -35,34 +30,6 @@ class ConversionTask(object):
 
         LOGGER.info(f"{len(dataset_ids)} datasets processed in batch {batch}")
 
-    def _run_lotus(self):
-        LOGGER.info(f"Submitting conversion to Lotus: " f"{self._batch_number}")
-        cmd = (
-            f"./cmip6_object_store/cmip6_zarr/cli.py "
-            f"run -b {self._batch_number} -r local"
-        )
-
-        duration = CONFIG["workflow"]["max_duration"]
-        memory = CONFIG["workflow"]["memory"]
-        lotus_log_dir = os.path.join(
-            CONFIG["log"]["log_base_dir"], self._project, "lotus"
-        )
-        create_dir(lotus_log_dir)
-
-        stdout = f"{lotus_log_dir}/{self._batch_number}.out"
-        stderr = f"{lotus_log_dir}/{self._batch_number}.err"
-
-        partition = CONFIG["workflow"]["job_queue"]
-
-        lotus = Lotus()
-        lotus.run(
-            cmd,
-            stdout=stdout,
-            stderr=stderr,
-            partition=partition,
-            duration=duration,
-            memory=memory,
-        )
 
 
 class TaskManager(object):
@@ -153,7 +120,69 @@ class TaskManager(object):
             LOGGER.warn("Nothing to run!")
             return
 
-        for batch in self._batches:
-            task = ConversionTask(batch, project=self._project, run_mode=self._run_mode)
-            task.run()
-        LOGGER.info(f"{len(self._batches)} batches completed")
+        if self._run_mode == 'local':
+            for batch in self._batches:
+                task = ConversionTask(batch, project=self._project)
+                task.run()
+            LOGGER.info(f"{len(self._batches)} batches completed")
+
+        elif self._run_mode == 'lotus':
+            self._run_tasks_lotus(self._batches)
+
+        else:
+            raise ValueError(f"unsupported run mode {self._run_mode}")
+            
+            
+    def _run_tasks_lotus(self, batches):
+
+        #batch_spec = ",".join(batches)
+        batch_spec = self._get_short_batch_spec(batches)
+
+        LOGGER.debug(f"Raw batch list: " f"{batches}")
+        LOGGER.info(f"Submitting conversion to Lotus: " f"{batch_spec}")
+        cmd = (
+            f"./cmip6_object_store/cmip6_zarr/cli.py "
+            f"run --slurm-array-member -r local "
+            f"-p {self._project}"
+        )
+
+        duration = CONFIG["workflow"]["max_duration"]
+        memory = CONFIG["workflow"]["memory"]
+        job_limit = CONFIG["workflow"]["job_limit"]
+        lotus_log_dir = os.path.join(
+            CONFIG["log"]["log_base_dir"], self._project, "lotus"
+        )
+        create_dir(lotus_log_dir)
+
+        stdout = f"{lotus_log_dir}/%A_%a.out"
+        stderr = f"{lotus_log_dir}/%A_%a.err"
+
+        partition = CONFIG["workflow"]["job_queue"]
+        array = f"{batch_spec}%{job_limit}"
+
+        lotus = Lotus()
+        lotus.run(
+            cmd,
+            stdout=stdout,
+            stderr=stderr,
+            partition=partition,
+            duration=duration,
+            memory=memory,
+            array=array
+        )
+
+
+    def _get_short_batch_spec(self, batches):
+        """
+        turn a list of batch numbers into a comma separated string such as 4-6,8,10
+        """        
+        limits = ([batches[0]] +
+                  [i for pair in zip(batches[:-1], batches[1:]) for i in pair if pair[1] != pair[0] + 1] +
+                  [batches[-1]])
+        it = iter(limits)
+
+        rangespecs = []
+        for lower in it:
+            upper = next(it)
+            rangespecs.append(f"{lower}-{upper}" if upper != lower else f"{lower}")
+        return ",".join(rangespecs)

@@ -8,7 +8,6 @@ import pandas as pd
 from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.utils import (
     get_archive_path,
-    get_pickle_store,
     get_zarr_url,
     read_zarr,
 )
@@ -76,8 +75,8 @@ class IntakeCatalogue:
 
     @timer
     def _get_zarr_df(self):
-        # Read in Zarr store pickle and convert to DataFrame, and return
-        records = get_pickle_store("zarr", self._project).read()
+        # Read in Zarr results store and convert to DataFrame, and return
+        dataset_ids = get_results_store(self._project).get_successful_runs()
 
         headers = [
             "mip_era",
@@ -100,13 +99,13 @@ class IntakeCatalogue:
         LIMIT = 10000000000
         #       LIMIT = 100
 
-        for dataset_id, zarr_path in records.items():
+        for dataset_id in dataset_ids:
 
             items = dataset_id.split(".")
             dcpp_start_year = self._get_dcpp_start_year(dataset_id)
             temporal_range = self._get_temporal_range(dataset_id)
 
-            zarr_url = get_zarr_url(zarr_path)
+            zarr_url = get_zarr_url(dataset_id, self._project)
             nc_path = get_archive_path(dataset_id) + "/*.nc"
 
             items.extend([dcpp_start_year, temporal_range, zarr_url, nc_path])
@@ -141,7 +140,7 @@ class IntakeCatalogue:
         except Exception:
             LOGGER.warning(f"FAILED TO GET TEMPORAL RANGE FOR: {dataset_id}")
             time_range = ""
-        # ds = read_zarr(dataset_id, use_cftime=True)
+        # ds = read_zarr(dataset_id, self._project, use_cftime=True)
         # time_var = ds.time.values
 
         # time_range = "-".join(
@@ -157,4 +156,4 @@ def create_intake_catalogue(project):
     cat.create()
 
 
-create_intake_catalogue("cmip6")
+create_intake_catalogue(CONFIG["workflow"]["default_project"])

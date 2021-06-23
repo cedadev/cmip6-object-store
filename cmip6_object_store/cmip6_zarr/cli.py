@@ -11,27 +11,19 @@ from cmip6_object_store import CONFIG, logging
 from cmip6_object_store.cmip6_zarr.batch import BatchManager
 from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
 from cmip6_object_store.cmip6_zarr.compare import compare_zarrs_with_ncs
+from cmip6_object_store.cmip6_zarr.results_store import get_results_store, get_verification_store
 from cmip6_object_store.cmip6_zarr.task import TaskManager
 from cmip6_object_store.cmip6_zarr.utils import (
     get_credentials,
-    get_pickle_store,
     get_zarr_url,
-    verification_status,
 )
 
 LOGGER = logging.getLogger(__file__)
 
 
-def _get_arg_parser_run(parser):
+def _add_arg_parser_run(parser):
 
-    parser.add_argument(
-        "-p",
-        "--project",
-        type=str,
-        default="cmip6",
-        required=False,
-        help="Project to convert to Zarr in Object Store.",
-    )
+    _add_arg_parser_project(parser, description="convert to Zarr in Object Store")
 
     group = parser.add_mutually_exclusive_group()
 
@@ -72,8 +64,6 @@ def _get_arg_parser_run(parser):
         required=False,
         help="Mode to run in, either 'lotus' (default) or 'local'.",
     )
-
-    return parser
 
 
 def _range_to_list(range_string, sep):
@@ -117,18 +107,16 @@ def run_main(args):
     tm.run_tasks()
 
 
-def _get_arg_parser_project(parser):
+def _add_arg_parser_project(parser, description=""):
 
     parser.add_argument(
         "-p",
         "--project",
         type=str,
-        default="cmip6",
+        default=CONFIG["workflow"]["default_project"],
         required=False,
-        help="Project name",
+        help=f"Project {description}",
     )
-
-    return parser
 
 
 def parse_args_project(args):
@@ -141,16 +129,9 @@ def create_main(args):
     bm.create_batches()
 
 
-def _get_arg_parser_clean(parser):
+def _add_arg_parser_clean(parser):
 
-    parser.add_argument(
-        "-p",
-        "--project",
-        type=str,
-        default="cmip6",
-        required=False,
-        help="Project to clean out directories for.",
-    )
+    _add_arg_parser_project(parser, description="to clean out directories for")
 
     parser.add_argument(
         "-D",
@@ -166,8 +147,6 @@ def _get_arg_parser_clean(parser):
         nargs="*",
         help="Identifiers of buckets TO DELETE!",
     )
-
-    return parser
 
 
 def parse_args_clean(args):
@@ -192,17 +171,6 @@ def clean_main(args):
             LOGGER.warning(f"Deleting: {dr}")
             shutil.rmtree(dr)
 
-    lock_files = [
-        f"{value}.lock"
-        for key, value in CONFIG[f"project:{project}"].items()
-        if key.endswith("_pickle")
-    ]
-
-    for lock_file in lock_files:
-        if os.path.isfile(lock_file):
-            LOGGER.warning(f"Deleting: {lock_file}")
-            os.remove(lock_file)
-
     if buckets_to_delete:
         LOGGER.warning("Starting to delete buckets from Object Store!")
         caringo_store = CaringoStore(creds=get_credentials())
@@ -212,16 +180,9 @@ def clean_main(args):
             caringo_store.delete(bucket)
 
 
-def _get_arg_parser_list(parser):
+def _add_arg_parser_list(parser):
 
-    parser.add_argument(
-        "-p",
-        "--project",
-        type=str,
-        default="cmip6",
-        required=False,
-        help="Project to clean out directories for.",
-    )
+    _add_arg_parser_project(parser, description="to list directories for")
 
     parser.add_argument(
         "-c",
@@ -230,8 +191,6 @@ def _get_arg_parser_list(parser):
         help="Only show the total count of records processed.",
     )
 
-    return parser
-
 
 def parse_args_list(args):
     return args.project, args.count_only
@@ -239,12 +198,13 @@ def parse_args_list(args):
 
 def list_main(args):
     project, count_only = parse_args_list(args)
-    pstore = get_pickle_store("zarr", project)
-    records = pstore.read().items()
+    results_store = get_results_store(project)
+    
+    records = results_store.get_successful_runs()
 
     if not count_only:
-        for _, zarr_path in records:
-            zarr_url = get_zarr_url(zarr_path)
+        for _, dataset_id in records:
+            zarr_url = get_zarr_url(dataset_id, project)
             print(f"Record: {zarr_url}")
 
     print(f"\nTotal records: {len(records)}")
@@ -252,29 +212,30 @@ def list_main(args):
 
 def verify_main(args):
     project = parse_args_project(args)
-    verified_pstore = get_pickle_store("verify", project)
-
-    successes, out_of = compare_zarrs_with_ncs(project)
+    results_store = get_results_store(project)
+    verified_store = get_verification_store(project)
+    
+    successes, out_of = compare_zarrs_with_ncs(project, dataset_id=args.dataset)
     print(f"\nVerified {successes} out of {out_of} datasets.")
 
     print("\n\nResults of all verifications so far:")
 
-    results = verified_pstore.read().items()
-    n_total = len(results)
+    n_verified_successes = verified_store.count_successes()
+    n_total_successes = results_store.count_successes()
+    n_total = results_store.count_results()
 
-    VERIFIED = verification_status[0]
-    n_successes = len([value for _, value in results if value == VERIFIED])
-
-    print(f"\t{n_successes} successfully verified from {n_total} in Zarr.")
+    print(f"""{n_verified_successes} successfully verified
+{n_total_successes} total claimed successes
+{n_total} total results including failures""")
 
 
 def show_errors_main(args):
     project = parse_args_project(args)
-    error_pstore = get_pickle_store("error", project)
+    results_store = get_results_store(project)    
 
-    errors = error_pstore.read().items()
-
-    for dataset_id, error in errors:
+    errors = results_store.get_failed_runs()
+    
+    for dataset_id, error in errors.items():
         print("\n===================================================")
         print(f"{dataset_id}:")
         print("===================================================\n")
@@ -290,27 +251,37 @@ def main():
     subparsers = main_parser.add_subparsers()
 
     run_parser = subparsers.add_parser("run")
-    _get_arg_parser_run(run_parser)
+    _add_arg_parser_run(run_parser)
     run_parser.set_defaults(func=run_main)
 
     create_parser = subparsers.add_parser("create-batches")
-    _get_arg_parser_project(create_parser)
+    _add_arg_parser_project(create_parser)
     create_parser.set_defaults(func=create_main)
 
     clean_parser = subparsers.add_parser("clean")
-    _get_arg_parser_clean(clean_parser)
+    _add_arg_parser_clean(clean_parser)
     clean_parser.set_defaults(func=clean_main)
 
     list_parser = subparsers.add_parser("list")
-    _get_arg_parser_list(list_parser)
+    _add_arg_parser_list(list_parser)
     list_parser.set_defaults(func=list_main)
 
     verify_parser = subparsers.add_parser("verify")
-    _get_arg_parser_project(verify_parser)
+    _add_arg_parser_project(verify_parser)
+
+    verify_parser.add_argument(
+        "-d",
+        "--dataset",
+        type=str,
+        default=None,
+        required=False,
+        help="Single dataset ID to verify (defaults to choosing a sample)"
+    )
+
     verify_parser.set_defaults(func=verify_main)
 
     show_errors_parser = subparsers.add_parser("show-errors")
-    _get_arg_parser_project(show_errors_parser)
+    _add_arg_parser_project(show_errors_parser)
     show_errors_parser.set_defaults(func=show_errors_main)
 
     args = main_parser.parse_args()

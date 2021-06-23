@@ -6,9 +6,10 @@ import dask
 import xarray as xr
 
 from .. import logging
-from ..config import CONFIG
+from ..config import CONFIG, get_from_proj_or_workflow
 from .caringo_store import CaringoStore
-from .utils import get_credentials, get_pickle_store, get_var_id
+from .utils import get_credentials, get_var_id, get_zarr_path
+from .results_store import get_results_store
 
 LOGGER = logging.getLogger(__file__)
 
@@ -19,38 +20,26 @@ class ZarrWriter(object):
         self._project = project
 
         self._config = CONFIG[f"project:{project}"]
-        self._zarr_pickle = get_pickle_store("zarr", self._project)
-        self._error_pickle = get_pickle_store("error", self._project)
-
-    def _get_from_proj_or_workflow(self, key):
-        if key in self._config:
-            return self._config[key]
-        return CONFIG["workflow"][key]
-
+        self._results_store = get_results_store(self._project)
+        
     def _id_to_directory(self, dataset_id):
         archive_dir = self._config["archive_dir"]
         return os.path.join(archive_dir, dataset_id.replace(".", "/"))
 
-    def _get_zarr_path(self, dataset_id):
-        split_at = self._get_from_proj_or_workflow("split_level")
-
-        parts = dataset_id.split(".")
-        prefix = self._config.get("bucket_prefix", "")
-        return (prefix + ".".join(parts[:split_at]), ".".join(parts[split_at:]) + ".zarr")
-
     def convert(self, dataset_id):
-        # Clear out error state if previously recorded
-        self._error_pickle.clear(dataset_id)
 
-        if self._zarr_pickle.contains(dataset_id):
+        if self._results_store.ran_successfully(dataset_id):
             LOGGER.info(f"Already converted to Zarr: {dataset_id}")
             return
+
+        # Clear out error state if previously recorded
+        self._results_store.delete_result(dataset_id)
 
         LOGGER.info(f"Converting to Zarr: {dataset_id}")
 
         try:
             store = CaringoStore(get_credentials())
-            bucket, zarr_file = self._get_zarr_path(dataset_id)
+            bucket, zarr_file = get_zarr_path(dataset_id, self._project)
             zpath = f"{bucket}/{zarr_file}"
             LOGGER.info(f"Zarr path: {zpath}")
 
@@ -82,7 +71,7 @@ class ZarrWriter(object):
 
         try:
             ds.close()
-            do_perms = self._get_from_proj_or_workflow("set_permissions")
+            do_perms = get_from_proj_or_workflow("set_permissions", self._project)
             if do_perms:
                 LOGGER.info("Setting read permissions")
                 store.set_permissions(zpath)
@@ -109,7 +98,7 @@ class ZarrWriter(object):
         var_id = get_var_id(dataset_id, project=self._project)
 
         # Chunk by time
-        chunk_size_bytes = self._get_from_proj_or_workflow("chunk_size") * (2 ** 20)
+        chunk_size_bytes = get_from_proj_or_workflow("chunk_size", self._project) * (2 ** 20)
         LOGGER.info(f'Shape of variable "{var_id}": {ds[var_id].shape}')
         n_bytes = ds[var_id].nbytes
 
@@ -132,11 +121,11 @@ class ZarrWriter(object):
             delayed_obj.compute()
 
     def _finalise(self, dataset_id, zpath):
-        self._zarr_pickle.add(dataset_id, zpath)
-        LOGGER.info(f"Wrote pickle entries for: {dataset_id}")
+        self._results_store.insert_success(dataset_id)
+        LOGGER.info(f"Wrote result for: {dataset_id}")
 
     def _wrap_exception(self, dataset_id, msg):
         tb = traceback.format_exc()
         error = f"{msg}:\n{tb}"
-        self._error_pickle.add(dataset_id, error)
+        self._results_store.insert_failure(dataset_id, error)
         LOGGER.error(f"FAILED TO COMPLETE FOR: {dataset_id}\n{error}")

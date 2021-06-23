@@ -2,8 +2,11 @@ import os
 from configparser import ConfigParser
 from itertools import chain
 
+_thisdir = os.path.dirname(__file__)
+_base = os.path.realpath(os.path.join(_thisdir, ".."))
+
 CONFIG = None
-CONF_FILE = os.path.join(os.path.dirname(__file__), "etc", "config.ini")
+CONF_FILE = os.path.join(_thisdir, "etc", "config.ini")
 
 
 def _to_list(i):
@@ -61,7 +64,8 @@ def _get_mappers(conf):
 
 def _load_config(conf_file=CONF_FILE):
 
-    conf = ConfigParser({"home": os.environ["HOME"]})
+    conf = ConfigParser({"home": os.environ["HOME"],
+                         "base_dir": _base})
 
     conf.read(conf_file)
     config = {}
@@ -91,3 +95,12 @@ def get_config():
 
 
 get_config()
+
+
+def get_from_proj_or_workflow(key, project):
+
+    proj_config = CONFIG[f"project:{project}"]
+    if key in proj_config:
+        return proj_config[key]
+    return CONFIG["workflow"][key]
+    

@@ -5,13 +5,19 @@ import pandas as pd
 from .. import logging
 from ..config import CONFIG
 from .utils import create_dir
+from .results_store import get_results_store
 
 LOGGER = logging.getLogger(__file__)
 
 
 class BatchManager(object):
-    def __init__(self, project):
+    def __init__(self, project, exclude_done=True):
         self._project = project
+        self._exclude_done = exclude_done
+
+        if exclude_done:
+            self._results_store = get_results_store(self._project)
+        
         data_dir = CONFIG["workflow"]["data_dir"]
         run_version = CONFIG["workflow"]["run_version"]
 
@@ -70,7 +76,19 @@ class BatchManager(object):
         # - write each batch to text file in versioned data directory
         current_size, current_batch, batch_count = 0, [], 1
 
+        LOGGER.info(f"{len(df)} total datasets")
+        if self._exclude_done:
+            successful_runs = set(self._results_store.get_successful_runs())
+            LOGGER.info(f"ignoring {len(successful_runs)} already processed")
+        
         for _, row in df.iterrows():
+
+            dataset_id = row.dataset_id
+            LOGGER.debug(f"dataset: {dataset_id}")
+            if self._exclude_done and dataset_id in successful_runs:
+                LOGGER.debug(f"already done: {dataset_id}")
+                continue
+            
             current_batch.append(row.dataset_id)
             current_size += row.size_mb
 

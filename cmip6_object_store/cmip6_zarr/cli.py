@@ -123,9 +123,14 @@ def parse_args_project(args):
     return args.project
 
 
+def _add_arg_parser_create(parser):
+    _add_arg_parser_project(parser)
+    parser.add_argument("--all", action="store_true",
+                        help="include all datasets in batches (default is to check if already done)")
+    
 def create_main(args):
     project = parse_args_project(args)
-    bm = BatchManager(project)
+    bm = BatchManager(project, exclude_done=not args.all)
     bm.create_batches()
 
 
@@ -255,7 +260,7 @@ def main():
     run_parser.set_defaults(func=run_main)
 
     create_parser = subparsers.add_parser("create-batches")
-    _add_arg_parser_project(create_parser)
+    _add_arg_parser_create(create_parser)
     create_parser.set_defaults(func=create_main)
 
     clean_parser = subparsers.add_parser("clean")

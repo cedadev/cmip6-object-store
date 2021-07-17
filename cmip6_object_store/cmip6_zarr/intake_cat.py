@@ -6,11 +6,15 @@ import numpy as np
 import pandas as pd
 
 from cmip6_object_store import CONFIG, logging
+
 from cmip6_object_store.cmip6_zarr.utils import (
     get_archive_path,
     get_zarr_url,
     read_zarr,
 )
+
+from cmip6_object_store.cmip6_zarr.results_store import get_results_store
+
 
 LOGGER = logging.getLogger(__file__)
 
@@ -31,6 +35,7 @@ class IntakeCatalogue:
     def __init__(self, project):
         self._iconf = CONFIG["intake"]
         self._project = project
+        self._results_store = get_results_store(self._project)
 
     def create(self):
         self._create_json()
@@ -76,7 +81,8 @@ class IntakeCatalogue:
     @timer
     def _get_zarr_df(self):
         # Read in Zarr results store and convert to DataFrame, and return
-        dataset_ids = get_results_store(self._project).get_successful_runs()
+        dataset_ids = self._results_store.get_successful_runs()
+        print(f"{len(dataset_ids)} datasets")
 
         headers = [
             "mip_era",
@@ -96,23 +102,23 @@ class IntakeCatalogue:
         ]
 
         rows = []
-        LIMIT = 10000000000
-        #       LIMIT = 100
+        #LIMIT = 10000000000
+        LIMIT = 100
 
-        for dataset_id in dataset_ids:
+        for row, dataset_id in enumerate(dataset_ids):
+
+            if row == LIMIT:
+                break
 
             items = dataset_id.split(".")
             dcpp_start_year = self._get_dcpp_start_year(dataset_id)
             temporal_range = self._get_temporal_range(dataset_id)
 
             zarr_url = get_zarr_url(dataset_id, self._project)
-            nc_path = get_archive_path(dataset_id) + "/*.nc"
+            nc_path = get_archive_path(dataset_id, self._project) + "/*.nc"
 
             items.extend([dcpp_start_year, temporal_range, zarr_url, nc_path])
             rows.append(items[:])
-
-            if len(rows) > LIMIT:
-                break
 
         return pd.DataFrame(rows, columns=headers)
 
@@ -126,19 +132,24 @@ class IntakeCatalogue:
 
     def _get_temporal_range(self, dataset_id):
         try:
-            nc_files = os.listdir(get_archive_path(dataset_id))
+            nc_files = os.listdir(get_archive_path(dataset_id, self._project))
             nc_files = [
-                _ for _ in nc_files if not _.startswith(".") and _.endswith(".nc")
+                fn for fn in nc_files if not fn.startswith(".") and fn.endswith(".nc")
             ]
 
-            time_ranges = [_.split(".")[-2].split("_")[-1].split("-") for _ in nc_files]
-            start = (str(min([int(_[0]) for _ in time_ranges])) + "01")[:6]
-            end = (str(min([int(_[0]) for _ in time_ranges])) + "12")[:6]
+            time_ranges = [fn.split(".")[-2].split("_")[-1].split("-") for fn in nc_files]
+            start = f"{min(int(tr[0]) for tr in time_ranges)}"
+            if len(start) == 4:
+                start += "01"
 
+            end = f"{max(int(tr[1]) for tr in time_ranges)}"
+            if len(end) == 4:
+                end += "12"
+                        
             time_range = f"{start}-{end}"
             LOGGER.info(f"Found {time_range} for {dataset_id}")
-        except Exception:
-            LOGGER.warning(f"FAILED TO GET TEMPORAL RANGE FOR: {dataset_id}")
+        except Exception as exc:
+            LOGGER.warning(f"FAILED TO GET TEMPORAL RANGE FOR: {dataset_id}: {exc}")
             time_range = ""
         # ds = read_zarr(dataset_id, self._project, use_cftime=True)
         # time_var = ds.time.values

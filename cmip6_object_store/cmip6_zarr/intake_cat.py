@@ -32,11 +32,12 @@ def timer(f):
 
 
 class IntakeCatalogue:
-    def __init__(self, project):
+    def __init__(self, project, limit=None):
         self._iconf = CONFIG["intake"]
         self._project = project
         self._results_store = get_results_store(self._project)
-
+        self._limit = limit
+        
     def create(self):
         self._create_json()
         self._create_csv()
@@ -102,12 +103,10 @@ class IntakeCatalogue:
         ]
 
         rows = []
-        #LIMIT = 10000000000
-        LIMIT = 100
 
         for row, dataset_id in enumerate(dataset_ids):
 
-            if row == LIMIT:
+            if self._limit is not None and row == self._limit:
                 break
 
             items = dataset_id.split(".")
@@ -162,9 +161,10 @@ class IntakeCatalogue:
         return time_range
 
 
-def create_intake_catalogue(project):
-    cat = IntakeCatalogue(project)
+def create_intake_catalogue(project, limit=None):
+    cat = IntakeCatalogue(project, limit=limit)
     cat.create()
 
 
-create_intake_catalogue(CONFIG["workflow"]["default_project"])
+if __name__ == '__main__':
+    create_intake_catalogue(CONFIG["workflow"]["default_project"])

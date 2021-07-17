@@ -13,6 +13,7 @@ from cmip6_object_store.cmip6_zarr.caringo_store import CaringoStore
 from cmip6_object_store.cmip6_zarr.compare import compare_zarrs_with_ncs
 from cmip6_object_store.cmip6_zarr.results_store import get_results_store, get_verification_store
 from cmip6_object_store.cmip6_zarr.task import TaskManager
+from cmip6_object_store.cmip6_zarr.intake_cat import create_intake_catalogue
 from cmip6_object_store.cmip6_zarr.utils import (
     get_credentials,
     get_zarr_url,
@@ -134,6 +135,16 @@ def create_main(args):
     bm.create_batches()
 
 
+def _add_arg_parser_intake(parser):
+    _add_arg_parser_project(parser, description="to create intake catalog for")
+    parser.add_argument("--limit", type=int,
+                        help="maximum number of datasets to include")
+
+def intake_main(args):
+    project = parse_args_project(args)
+    create_intake_catalogue(project, limit=args.limit)
+    
+    
 def _add_arg_parser_clean(parser):
 
     _add_arg_parser_project(parser, description="to clean out directories for")
@@ -284,6 +295,10 @@ def main():
     )
 
     verify_parser.set_defaults(func=verify_main)
+
+    intake_parser = subparsers.add_parser("create-intake")
+    _add_arg_parser_intake(intake_parser)
+    intake_parser.set_defaults(func=intake_main)
 
     show_errors_parser = subparsers.add_parser("show-errors")
     _add_arg_parser_project(show_errors_parser)

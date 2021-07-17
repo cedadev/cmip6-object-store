@@ -67,7 +67,8 @@ def test_Intake():
     
     col = _get_collection(json_catalog, csv_catalog)
 
-    #assert len(col.df) > 100000
+    # check total number of datasets
+    assert len(col.df) > 100000
 
     dataset = _get_example_dataset(col)
     zarr_path = dataset['zarr_path']    

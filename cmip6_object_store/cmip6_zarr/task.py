@@ -22,7 +22,6 @@ class ConversionTask(object):
 
         batch_manager = BatchManager(self._project)
         dataset_ids = batch_manager.get_batch(batch)
-
         zarr_writer = ZarrWriter(batch, self._project)
 
         for dataset_id in dataset_ids:
@@ -106,14 +105,6 @@ class TaskManager(object):
             successes = []
 
         self._datasets = sorted(list(set(self._datasets) - set(successes)))
-
-    def get_batch(self):
-        batch_size = CONFIG["workflow"]["batch_size"]
-
-        batch = self._datasets[:batch_size]
-        self._datasets = self._datasets[batch_size:]
-
-        return batch
 
     def run_tasks(self):
         if not len(self._batches):

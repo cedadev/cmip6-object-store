@@ -28,10 +28,10 @@ class PolicyChanger:
 
         policy = {
             "Version": "2008-10-17",
-            "Id": "Unnamed Policy",
+            "Id": "Read All Policy",
             "Statement": [
                 {
-                    "Sid": "Read-only access for Everyone",
+                    "Sid": "Read-only and list bucket access for Everyone",
                     "Effect": "Allow",
                     "Principal": {
                         "anonymous": [
@@ -39,7 +39,8 @@ class PolicyChanger:
                         ]
                     },
                     "Action": [
-                        "GetObject"
+                        "GetObject",
+                        "ListBucket"
                     ],
                     "Resource": "*"
                 }

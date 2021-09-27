@@ -82,12 +82,12 @@ def main():
                 changer.change_bucket_policy(bucket)
             except botocore.exceptions.ClientError as exc:
                 if 'Access Denied' in str(exc):
-                    print('FAIL')
+                    print('Access denied')
                     faillog.write(f'{bucket}\n')
                 else:
                     raise
             else:
-                print('Succ')
+                print('Success')
                 succlog.write(f'{bucket}\n')    
 
 main()
